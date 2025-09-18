@@ -1,0 +1,186 @@
+{
+  "name": "WhatsApp Simulator - Full Force Academia",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "phone_number",
+              "name": "phoneNumber",
+              "value": "5566999301589",
+              "type": "string"
+            },
+            {
+              "id": "message_text",
+              "name": "messageText",
+              "value": "Oi! 👋 Sentimos sua falta na *Full Force Academia* aqui em Matupá-MT! 💪\n\n🎁 *Oferta especial*: 7 dias GRÁTIS para você voltar a treinar!\n\n📍 Estamos te esperando na academia\n⏰ Horários flexíveis disponíveis\n\nQuer voltar? Responda *SIM* e vamos agendar! 🚀",
+              "type": "string"
+            },
+            {
+              "id": "recipient_name",
+              "name": "recipientName",
+              "value": "Teste Usuario",
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "prepare-message",
+      "name": "Preparar Mensagem WhatsApp",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simulador de envio WhatsApp\nconst dados = $input.item.json;\n\n// Simular envio (95% sucesso)\nconst sucessoEnvio = Math.random() > 0.05;\n\nconst resultado = {\n  ...dados,\n  status_envio: sucessoEnvio ? 'ENVIADO' : 'ERRO',\n  message_id: 'MSG_' + Date.now(),\n  delivery_status: sucessoEnvio ? 'delivered' : 'failed',\n  cost_estimate: 0.05, // R$ 0,05 por mensagem\n  academia: 'Full Force Academia',\n  cidade: 'Matupá-MT',\n  simulado: true\n};\n\n// Logs detalhados\nconsole.log('📱 [WHATSAPP SIMULATOR] Enviando mensagem:');\nconsole.log('📞 Para:', dados.phoneNumber);\nconsole.log('👤 Nome:', dados.recipientName);\nconsole.log('💬 Mensagem:', dados.messageText.substring(0, 50) + '...');\nconsole.log('✅ Status:', resultado.status_envio);\nconsole.log('🆔 Message ID:', resultado.message_id);\n\nif (sucessoEnvio) {\n  console.log('🎯 [SUCESSO] Mensagem enviada com sucesso!');\n} else {\n  console.log('❌ [ERRO] Falha no envio da mensagem');\n}\n\nreturn resultado;"
+      },
+      "id": "simulate-whatsapp",
+      "name": "Simular Envio WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "success_condition",
+              "leftValue": "={{ $json.status_envio }}",
+              "rightValue": "ENVIADO",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-success",
+      "name": "Verificar Sucesso",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [840, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success_message",
+              "name": "successMessage",
+              "value": "🚀 TESTE WHATSAPP REALIZADO COM SUCESSO!\n\n📱 Número: {{ $json.phoneNumber }}\n👤 Nome: {{ $json.recipientName }}\n✅ Status: {{ $json.status_envio }}\n🆔 Message ID: {{ $json.message_id }}\n⏰ Timestamp: {{ $json.timestamp }}\n🏋️‍♂️ Academia: {{ $json.academia }}\n📍 Cidade: {{ $json.cidade }}\n\n🎯 PRÓXIMO PASSO: Configurar WhatsApp Business API real",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "success-result",
+      "name": "Resultado Sucesso",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1040, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error_message",
+              "name": "errorMessage",
+              "value": "❌ ERRO NO TESTE WHATSAPP\n\n📱 Número: {{ $json.phoneNumber }}\n👤 Nome: {{ $json.recipientName }}\n❌ Status: {{ $json.status_envio }}\n⏰ Timestamp: {{ $json.timestamp }}\n\n🔧 AÇÃO: Verificar configuração WhatsApp API",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "error-result",
+      "name": "Resultado Erro",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1040, 400]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar Mensagem WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Mensagem WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Simular Envio WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simular Envio WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Verificar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Sucesso": {
+      "main": [
+        [
+          {
+            "node": "Resultado Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resultado Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "timezone": "America/Sao_Paulo"
+  }
+}

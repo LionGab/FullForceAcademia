@@ -1,0 +1,271 @@
+{
+  "name": "4 - Sofia AI Agent - Dynamic Reasoning",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "sofia-message",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-sofia-001",
+      "name": "WhatsApp Message Input",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "webhookId": "sofia-whatsapp-input"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sofia - Contextual Analysis Engine\nconst message = $json.message || '';\nconst from = $json.from || '';\nconst conversation_history = $json.history || [];\nconst timestamp = new Date();\n\n// CONTEXTUAL INTELLIGENCE LAYER\nfunction analyzeContext(msg, history) {\n  const context = {\n    intent: 'unknown',\n    urgency: 'medium',\n    customer_type: 'prospect',\n    emotional_state: 'neutral',\n    stage: 'initial',\n    previous_interactions: history.length || 0\n  };\n  \n  const msgLower = msg.toLowerCase();\n  \n  // INTENT DETECTION (Dynamic)\n  if (msgLower.includes('quero') || msgLower.includes('interessado') || msgLower.includes('sim')) {\n    context.intent = 'interesse_alto';\n    context.urgency = 'high';\n    context.emotional_state = 'positive';\n  } else if (msgLower.includes('preço') || msgLower.includes('valor') || msgLower.includes('quanto')) {\n    context.intent = 'consulta_preco';\n    context.stage = 'consideracao';\n  } else if (msgLower.includes('horário') || msgLower.includes('quando') || msgLower.includes('agenda')) {\n    context.intent = 'agendamento';\n    context.urgency = 'high';\n  } else if (msgLower.includes('não') || msgLower.includes('nao') || msgLower.includes('depois')) {\n    context.intent = 'objecao';\n    context.emotional_state = 'resistance';\n  } else if (msgLower.includes('?')) {\n    context.intent = 'duvida';\n    context.stage = 'investigacao';\n  }\n  \n  // CUSTOMER TYPE DETECTION\n  if (history.some(h => h.includes('ex-aluno') || h.includes('voltei'))) {\n    context.customer_type = 'ex_aluno';\n  } else if (history.some(h => h.includes('free pass') || h.includes('gratuito'))) {\n    context.customer_type = 'free_pass';\n  } else if (history.some(h => h.includes('amigo') || h.includes('indicado'))) {\n    context.customer_type = 'amigo_bonus';\n  }\n  \n  return context;\n}\n\n// DYNAMIC REASONING ENGINE\nfunction decideBestAction(context) {\n  const actions = [];\n  \n  // DECISION TREE BASED ON CONTEXT\n  if (context.intent === 'interesse_alto') {\n    if (context.customer_type === 'ex_aluno') {\n      actions.push('oferecer_promocao_volta');\n      actions.push('verificar_historico_valor');\n    } else if (context.customer_type === 'free_pass') {\n      actions.push('acelerar_conversao');\n      actions.push('criar_urgencia_desconto');\n    } else {\n      actions.push('oferecer_free_pass');\n      actions.push('agendar_avaliacao');\n    }\n  } else if (context.intent === 'consulta_preco') {\n    actions.push('apresentar_planos_segmentado');\n    actions.push('destacar_valor_vs_beneficios');\n    if (context.customer_type === 'ex_aluno') {\n      actions.push('aplicar_desconto_volta');\n    }\n  } else if (context.intent === 'objecao') {\n    actions.push('quebrar_objecao_contextual');\n    actions.push('oferecer_alternativa');\n    actions.push('manter_relacionamento');\n  } else if (context.intent === 'agendamento') {\n    actions.push('verificar_agenda_disponivel');\n    actions.push('confirmar_dados_contato');\n  }\n  \n  return {\n    primary_action: actions[0] || 'continuar_conversa',\n    secondary_actions: actions.slice(1),\n    reasoning: `Baseado no contexto: ${context.intent} + ${context.customer_type} + ${context.emotional_state}`\n  };\n}\n\n// EXECUTE ANALYSIS\nconst context = analyzeContext(message, conversation_history);\nconst decision = decideBestAction(context);\n\nreturn {\n  original_message: message,\n  from: from,\n  timestamp: timestamp.toISOString(),\n  context_analysis: context,\n  sofia_decision: decision,\n  conversation_stage: context.stage,\n  next_workflow: `sofia_${decision.primary_action}`,\n  reasoning_log: `Sofia analisou: '${message}' e decidiu: ${decision.primary_action} porque ${decision.reasoning}`\n};"
+      },
+      "id": "sofia-brain-002",
+      "name": "Sofia Contextual Brain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "action-interest",
+              "leftValue": "={{ $json.sofia_decision.primary_action }}",
+              "rightValue": "interesse_alto",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "sofia-router-003",
+      "name": "Sofia Decision Router",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sofia Dynamic Response Generator\nconst context = $json.context_analysis;\nconst decision = $json.sofia_decision;\nconst customer_type = context.customer_type;\nconst intent = context.intent;\nconst from = $json.from;\n\n// PERSONA-BASED RESPONSE TEMPLATES\nconst responses = {\n  ex_aluno: {\n    interesse_alto: `Que alegria saber que você quer voltar! 🎉\\n\\nTenho uma oferta especial de VOLTA que vai te surpreender:\\n\\n🎁 **20% de desconto** nos primeiros 3 meses\\n💪 **1 semana grátis** para relembrar como é bom treinar aqui\\n\\nA Full Force Academia tem novidades incríveis esperando você!\\n\\nQuer que eu reserve essa semana grátis? É só confirmar! 🚀`,\n    consulta_preco: `Oi! Para você que já fez parte da nossa família, temos condições especiais! 💪\\n\\n**OFERTA VOLTA POR CIMA:**\\n\\n🔥 Plano Mensal: R$ 143,20 (20% off)\\n🔥 Plano Semestral: R$ 715,20 (20% off)\\n🔥 Plano Anual: R$ 1.046,40 (20% off)\\n\\n**+ BÔNUS:** 1 semana grátis para decidir!\\n\\nEssa oferta é só para ex-alunos como você. Que tal aproveitar? 😊`\n  },\n  free_pass: {\n    interesse_alto: `Perfeito! Vejo que você está aproveitando seu Free Pass! 🎉\\n\\nPara não perder o ritmo, que tal garantir sua vaga definitiva?\\n\\n**OFERTA EXCLUSIVA FREE PASS:**\\n✅ Sem taxa de matrícula\\n✅ Primeiro mês por R$ 149 (economia de R$ 30)\\n✅ Acesso total aos equipamentos novos\\n\\nSó hoje! Confirmo sua matrícula agora? 🚀`,\n    consulta_preco: `Que bom que está considerando continuar! 💪\\n\\n**PLANOS FULL FORCE ACADEMIA:**\\n\\n💥 **MAIS ESCOLHIDO:** Mensal R$ 179\\n🏆 **MELHOR CUSTO:** Semestral R$ 894 (R$ 149/mês)\\n👑 **VIP:** Anual R$ 1.308 (R$ 109/mês + leva amigo grátis!)\\n\\nComo está sendo seu Free Pass? Qual plano faz mais sentido pra você? 😊`\n  },\n  prospect: {\n    interesse_alto: `Que ótimo! Você escolheu a academia certa! 🎉\\n\\n**BORA COMEÇAR?**\\n\\n🎁 **FREE PASS 5 DIAS** - Totalmente grátis!\\n📍 Conheça nossos equipamentos novos\\n💪 Experimente todas as modalidades\\n👥 Sinta o clima da nossa comunidade\\n\\nPosso agendar sua visita para quando? Temos horários hoje mesmo! 🚀`,\n    consulta_preco: `Oi! Que bom seu interesse! 😊\\n\\n**PLANOS FULL FORCE ACADEMIA - MATUPÁ/MT:**\\n\\n💚 **Mensal**: R$ 179 (flexibilidade total)\\n💙 **Semestral**: R$ 894 (economia R$ 180)\\n💜 **Anual**: R$ 1.308 (economia R$ 840 + bônus amigo grátis!)\\n\\n**DICA:** Comece com nosso **FREE PASS 5 DIAS** gratuito!\\n\\nQuer conhecer primeiro? Quando pode vir? 🏋️‍♀️`\n  }\n};\n\n// DYNAMIC RESPONSE SELECTION\nfunction generateResponse(customer_type, intent) {\n  const template = responses[customer_type]?.[intent] || responses.prospect[intent] || responses.prospect.interesse_alto;\n  \n  // ADD PERSONALIZATION ELEMENTS\n  const personalizations = {\n    time_based: getTimeBasedPersonalization(),\n    weather: 'Dia perfeito para treinar! ☀️',\n    community: 'Em Matupá, todo mundo se conhece, e aqui não é diferente! 😊'\n  };\n  \n  return template;\n}\n\nfunction getTimeBasedPersonalization() {\n  const hour = new Date().getHours();\n  if (hour < 12) return '☀️ Bom dia!';\n  if (hour < 18) return '🌞 Boa tarde!';\n  return '🌙 Boa noite!';\n}\n\n// GENERATE SOFIA'S RESPONSE\nconst response = generateResponse(customer_type, intent);\n\n// DETERMINE NEXT ACTIONS\nconst next_actions = [];\nif (intent === 'interesse_alto') {\n  next_actions.push('follow_up_24h');\n  next_actions.push('prepare_onboarding');\n} else if (intent === 'consulta_preco') {\n  next_actions.push('send_detailed_plans');\n  next_actions.push('offer_visit');\n}\n\nreturn {\n  to: from,\n  message: response,\n  sofia_reasoning: `Identifiquei ${customer_type} com ${intent}, gerando resposta personalizada`,\n  next_actions: next_actions,\n  follow_up_time: new Date(Date.now() + 24*60*60*1000).toISOString(),\n  conversation_stage: context.stage,\n  customer_score: calculateCustomerScore(context),\n  academia: 'Full Force Academia',\n  cidade: 'Matupá-MT'\n};\n\nfunction calculateCustomerScore(context) {\n  let score = 50; // base\n  if (context.intent === 'interesse_alto') score += 30;\n  if (context.customer_type === 'ex_aluno') score += 20;\n  if (context.emotional_state === 'positive') score += 15;\n  if (context.urgency === 'high') score += 10;\n  return Math.min(100, score);\n}"
+      },
+      "id": "sofia-response-004",
+      "name": "Sofia Dynamic Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/send-whatsapp",
+        "options": {
+          "bodyContentType": "json",
+          "jsonBody": "={\"to\": \"{{ $json.to }}\", \"message\": \"{{ $json.message }}\", \"type\": \"sofia_ai_response\"}",
+          "timeout": 30000
+        }
+      },
+      "id": "send-sofia-response-005",
+      "name": "Send Sofia Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1000, 300],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": "16ftXuNF2ssAG74dPcsZaCJD4TxfYEjd-bnrRjk7l68I",
+        "sheetName": "Sofia_Conversations",
+        "columnToMatchOn": "telefone",
+        "valueInputMode": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "telefone",
+              "fieldValue": "={{ $json.to }}"
+            },
+            {
+              "fieldId": "mensagem_original",
+              "fieldValue": "={{ $json.original_message }}"
+            },
+            {
+              "fieldId": "contexto_detectado",
+              "fieldValue": "={{ $json.context_analysis.intent }}"
+            },
+            {
+              "fieldId": "tipo_cliente",
+              "fieldValue": "={{ $json.context_analysis.customer_type }}"
+            },
+            {
+              "fieldId": "decisao_sofia",
+              "fieldValue": "={{ $json.sofia_decision.primary_action }}"
+            },
+            {
+              "fieldId": "resposta_enviada",
+              "fieldValue": "={{ $json.message }}"
+            },
+            {
+              "fieldId": "score_cliente",
+              "fieldValue": "={{ $json.customer_score }}"
+            },
+            {
+              "fieldId": "proximas_acoes",
+              "fieldValue": "={{ $json.next_actions.join(', ') }}"
+            },
+            {
+              "fieldId": "timestamp",
+              "fieldValue": "={{ $json.timestamp }}"
+            },
+            {
+              "fieldId": "raciocinio_sofia",
+              "fieldValue": "={{ $json.sofia_reasoning }}"
+            }
+          ]
+        }
+      },
+      "id": "log-sofia-conversation-006",
+      "name": "Log Sofia Conversation",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1200, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Full Force Academia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "high-score-condition",
+              "leftValue": "={{ $json.customer_score }}",
+              "rightValue": "80",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "check-hot-lead-007",
+      "name": "Check Hot Lead",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"success\", \"sofia_action\": \"{{ $json.sofia_decision.primary_action }}\", \"customer_score\": {{ $json.customer_score }}, \"reasoning\": \"{{ $json.sofia_reasoning }}\" }",
+        "options": {}
+      },
+      "id": "webhook-response-008",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1200, 300]
+    }
+  ],
+  "connections": {
+    "WhatsApp Message Input": {
+      "main": [
+        [
+          {
+            "node": "Sofia Contextual Brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sofia Contextual Brain": {
+      "main": [
+        [
+          {
+            "node": "Sofia Decision Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sofia Decision Router": {
+      "main": [
+        [
+          {
+            "node": "Sofia Dynamic Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sofia Dynamic Response": {
+      "main": [
+        [
+          {
+            "node": "Send Sofia Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check Hot Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Sofia Response": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Sofia Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "4",
+  "meta": {
+    "instanceId": "full-force-academia-n8n"
+  },
+  "id": "4",
+  "tags": [
+    {
+      "createdAt": "2025-09-12T23:00:00.000Z",
+      "updatedAt": "2025-09-12T23:00:00.000Z",
+      "id": "1",
+      "name": "Sofia AI Agent"
+    }
+  ]
+}

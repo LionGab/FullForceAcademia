@@ -1,0 +1,365 @@
+{
+  "name": "Escalação Inteligente - WhatsApp → SMS → Ligação",
+  "nodes": [
+    {
+      "id": "7f8g9h0i-j1k2-3456-789e-fghij0123456",
+      "name": "Webhook Trigger Escalação",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "path": "escalacao-inteligente",
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "id": "8g9h0i1j-k2l3-4567-890e-fghij1234567",
+      "name": "Verificar Tentativas Anteriores",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  m.*,\n  COUNT(cl.id) as total_tentativas_whatsapp,\n  COUNT(CASE WHEN cl.channel = 'sms' THEN 1 END) as tentativas_sms,\n  COUNT(CASE WHEN cl.channel = 'phone' THEN 1 END) as tentativas_phone,\n  MAX(cl.sent_at) as ultima_tentativa\nFROM academia_members m\nLEFT JOIN campaign_logs cl ON m.id = cl.student_id \n  AND cl.sent_at >= CURRENT_TIMESTAMP - INTERVAL '7 days'\nWHERE m.whatsapp_formatado = '{{ $json.whatsapp_number }}'\nGROUP BY m.id"
+      }
+    },
+    {
+      "id": "9h0i1j2k-l3m4-5678-901e-fghij2345678",
+      "name": "Determinar Canal de Escalação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Determinar próximo canal de escalação\nconst item = $input.first().json;\n\nconst totalWhatsApp = item.total_tentativas_whatsapp || 0;\nconst tentativasSMS = item.tentativas_sms || 0;\nconst tentativasPhone = item.tentativas_phone || 0;\n\nlet nextChannel = 'whatsapp';\nlet shouldEscalate = false;\nlet escalationReason = '';\n\n// Lógica de escalação inteligente\nif (totalWhatsApp >= 3 && tentativasSMS === 0) {\n  nextChannel = 'sms';\n  shouldEscalate = true;\n  escalationReason = 'WhatsApp não responsivo após 3 tentativas';\n} else if (tentativasSMS >= 2 && tentativasPhone === 0) {\n  nextChannel = 'phone';\n  shouldEscalate = true;\n  escalationReason = 'SMS não responsivo após 2 tentativas';\n} else if (tentativasPhone >= 1) {\n  nextChannel = 'final';\n  shouldEscalate = false;\n  escalationReason = 'Todas as tentativas de contato esgotadas';\n} else if (totalWhatsApp < 3) {\n  nextChannel = 'whatsapp';\n  shouldEscalate = true;\n  escalationReason = 'Continuar tentativas WhatsApp';\n}\n\nreturn [{\n  json: {\n    ...item,\n    nextChannel: nextChannel,\n    shouldEscalate: shouldEscalate,\n    escalationReason: escalationReason,\n    totalAttempts: totalWhatsApp + tentativasSMS + tentativasPhone,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      }
+    },
+    {
+      "id": "0i1j2k3l-m4n5-6789-012e-fghij3456789",
+      "name": "Router Canal",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [
+        800,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "caseSensitive": true,
+          "leftValue": "",
+          "typeValidation": "strict"
+        },
+        "conditions": {
+          "conditions": [
+            {
+              "id": "whatsapp-route",
+              "leftValue": "={{ $json.nextChannel }}",
+              "rightValue": "whatsapp",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "sms-route",
+              "leftValue": "={{ $json.nextChannel }}",
+              "rightValue": "sms",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "phone-route",
+              "leftValue": "={{ $json.nextChannel }}",
+              "rightValue": "phone",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1j2k3l4m-n5o6-7890-123e-fghij4567890",
+      "name": "Enviar WhatsApp Escalado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1000,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://whatsapp-api:3001/send-message",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.whatsapp_formatado }}\",\n  \"message\": \"⚠️ URGENTE: {{ $json.primeiro_nome }}, esta é nossa última tentativa via WhatsApp. Precisa voltar? Responda SIM e ligamos agora! 📞💪\"\n}",
+        "options": {
+          "timeout": 10000
+        },
+        "onError": "continueRegularOutput",
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 3000
+      }
+    },
+    {
+      "id": "2k3l4m5n-o6p7-8901-234e-fghij5678901",
+      "name": "Enviar SMS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1000,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{ $env.TWILIO_ACCOUNT_SID }}/Messages.json",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "From",
+              "value": "={{ $env.TWILIO_PHONE_NUMBER }}"
+            },
+            {
+              "name": "To",
+              "value": "={{ $json.whatsapp_formatado.replace('@c.us', '') }}"
+            },
+            {
+              "name": "Body",
+              "value": "=Full Force Academia: {{ $json.primeiro_nome }}, sentimos sua falta! Que tal voltar aos treinos? Ligue (65) 99999-9999 ou responda este SMS. Oferta especial te aguarda! 🏋️"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        },
+        "onError": "continueRegularOutput",
+        "retryOnFail": true,
+        "maxTries": 2,
+        "waitBetweenTries": 2000
+      }
+    },
+    {
+      "id": "3l4m5n6o-p7q8-9012-345e-fghij6789012",
+      "name": "Agendar Ligação",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1000,
+        400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO call_queue (\n  student_id,\n  phone_number,\n  student_name,\n  priority,\n  scheduled_for,\n  attempt_reason,\n  created_at\n) VALUES (\n  {{ $json.id }},\n  '{{ $json.celular }}',\n  '{{ $json.nome_completo }}',\n  'high',\n  CURRENT_TIMESTAMP + INTERVAL '2 hours',\n  'Escalação após falha WhatsApp/SMS',\n  CURRENT_TIMESTAMP\n)"
+      }
+    },
+    {
+      "id": "4m5n6o7p-q8r9-0123-456e-fghij7890123",
+      "name": "Log Escalação",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO escalation_logs (\n  student_id,\n  from_channel,\n  to_channel,\n  escalation_reason,\n  total_attempts_before,\n  escalated_at\n) VALUES (\n  {{ $json.id }},\n  'whatsapp',\n  '{{ $json.nextChannel }}',\n  '{{ $json.escalationReason }}',\n  {{ $json.totalAttempts }},\n  CURRENT_TIMESTAMP\n)"
+      }
+    },
+    {
+      "id": "5n6o7p8q-r9s0-1234-567e-fghij8901234",
+      "name": "Notificar Equipe",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1400,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"🚨 Escalação Ativa - Academia Full Force\",\n  \"attachments\": [\n    {\n      \"color\": \"warning\",\n      \"fields\": [\n        {\n          \"title\": \"Aluno\",\n          \"value\": \"{{ $json.nome_completo }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"Canal\",\n          \"value\": \"{{ $json.nextChannel.toUpperCase() }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"Tentativas\",\n          \"value\": \"{{ $json.totalAttempts }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"Motivo\",\n          \"value\": \"{{ $json.escalationReason }}\",\n          \"short\": false\n        }\n      ]\n    }\n  ]\n}",
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueRegularOutput"
+      }
+    },
+    {
+      "id": "6o7p8q9r-s0t1-2345-678e-fghij9012345",
+      "name": "Response Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1600,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "responseBody": "={\n  \"success\": true,\n  \"escalation\": {\n    \"student\": \"{{ $json.nome_completo }}\",\n    \"channel\": \"{{ $json.nextChannel }}\",\n    \"reason\": \"{{ $json.escalationReason }}\",\n    \"attempts\": {{ $json.totalAttempts }},\n    \"timestamp\": \"{{ $json.timestamp }}\"\n  }\n}",
+          "responseContentType": "application/json",
+          "responseStatusCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger Escalação": {
+      "main": [
+        [
+          {
+            "node": "Verificar Tentativas Anteriores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Tentativas Anteriores": {
+      "main": [
+        [
+          {
+            "node": "Determinar Canal de Escalação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Determinar Canal de Escalação": {
+      "main": [
+        [
+          {
+            "node": "Router Canal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Router Canal": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp Escalado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agendar Ligação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp Escalado": {
+      "main": [
+        [
+          {
+            "node": "Log Escalação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar SMS": {
+      "main": [
+        [
+          {
+            "node": "Log Escalação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Ligação": {
+      "main": [
+        [
+          {
+            "node": "Log Escalação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Escalação": {
+      "main": [
+        [
+          {
+            "node": "Notificar Equipe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notificar Equipe": {
+      "main": [
+        [
+          {
+            "node": "Response Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "timezone": "America/Sao_Paulo"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "academia-escalation",
+      "name": "Academia Escalation"
+    },
+    {
+      "id": "multi-channel",
+      "name": "Multi Channel"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-15T21:50:00.000Z",
+  "versionId": "1"
+}

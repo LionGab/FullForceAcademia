@@ -1,0 +1,158 @@
+{
+  "name": "Academia - Segmentação de Membros",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-webhook",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "segmentacao-membros"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "1fct6LX6IjkZtSvOPSfbm5AVwxpoXVdl7P54u9buGqNI",
+        "sheetName": "Sheet1",
+        "range": "A:Z"
+      },
+      "id": "sheets-active",
+      "name": "Get Active Students",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [460, 200]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "1QT4yy2AoI2gvnIxEhh31J8aq4c_yVJ_NCKk3bkgPo6w",
+        "sheetName": "Sheet1",
+        "range": "A:Z"
+      },
+      "id": "sheets-general",
+      "name": "Get General Students",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "language": "javascript",
+        "jsCode": "// Comparar listas e identificar alunos inativos\nconst activeStudents = $input.first().json;\nconst allStudents = $input.last().json;\n\n// Criar map dos alunos ativos por celular\nconst activeMap = new Map();\nactiveStudents.forEach(student => {\n  const celular = (student.celular || student.telefone || '').toString().replace(/\\D/g, '');\n  if (celular) {\n    activeMap.set(celular, student);\n  }\n});\n\n// Identificar inativos\nconst inactiveStudents = [];\nallStudents.forEach(student => {\n  const celular = (student.celular || student.telefone || '').toString().replace(/\\D/g, '');\n  if (celular && !activeMap.has(celular)) {\n    \n    // Classificação por segmento\n    let segmento = 'FRIO';\n    let prioridade = 4;\n    let diasEstimadosInativo = Math.floor(Math.random() * 120); // Simulação\n    \n    if (diasEstimadosInativo <= 30) {\n      segmento = 'QUENTE';\n      prioridade = 1;\n    } else if (diasEstimadosInativo <= 60) {\n      segmento = 'MORNO';\n      prioridade = 2;\n    } else if (diasEstimadosInativo <= 90) {\n      segmento = 'FRIO';\n      prioridade = 3;\n    } else {\n      segmento = 'CONGELADO';\n      prioridade = 4;\n    }\n    \n    // Formatar WhatsApp\n    let whatsapp = celular;\n    if (whatsapp.length === 9) {\n      whatsapp = '5565' + whatsapp;\n    } else if (whatsapp.length === 11 && whatsapp.startsWith('65')) {\n      whatsapp = '55' + whatsapp;\n    }\n    \n    inactiveStudents.push({\n      nome_completo: student.nome_completo || student.nome || '',\n      primeiro_nome: (student.nome_completo || student.nome || '').split(' ')[0],\n      celular: celular,\n      whatsapp: whatsapp,\n      email: student.email || '',\n      idade: student.idade || 0,\n      sexo: student.sexo || '',\n      segmento: segmento,\n      prioridade: prioridade,\n      dias_inativo_estimado: diasEstimadosInativo,\n      potencial_reativacao: segmento === 'QUENTE' ? 'ALTO' : segmento === 'MORNO' ? 'MEDIO' : 'BAIXO'\n    });\n  }\n});\n\n// Ordenar por prioridade\ninactiveStudents.sort((a, b) => a.prioridade - b.prioridade);\n\nconsole.log(`Encontrados ${inactiveStudents.length} alunos inativos`);\nconsole.log(`QUENTE: ${inactiveStudents.filter(s => s.segmento === 'QUENTE').length}`);\nconsole.log(`MORNO: ${inactiveStudents.filter(s => s.segmento === 'MORNO').length}`);\nconsole.log(`FRIO: ${inactiveStudents.filter(s => s.segmento === 'FRIO').length}`);\nconsole.log(`CONGELADO: ${inactiveStudents.filter(s => s.segmento === 'CONGELADO').length}`);\n\nreturn inactiveStudents.map(student => ({ json: student }));"
+      },
+      "id": "analyze-inactive",
+      "name": "Analyze Inactive Students",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "documentId": "1QT4yy2AoI2gvnIxEhh31J8aq4c_yVJ_NCKk3bkgPo6w",
+        "sheetName": "Alunos_Inativos_Segmentados",
+        "columnToMatchOn": "nome_completo",
+        "valueInputMode": "define",
+        "fieldsUi": {
+          "values": [
+            {"fieldId": "nome_completo", "fieldValue": "={{ $json.nome_completo }}"},
+            {"fieldId": "primeiro_nome", "fieldValue": "={{ $json.primeiro_nome }}"},
+            {"fieldId": "celular", "fieldValue": "={{ $json.celular }}"},
+            {"fieldId": "whatsapp", "fieldValue": "={{ $json.whatsapp }}"},
+            {"fieldId": "email", "fieldValue": "={{ $json.email }}"},
+            {"fieldId": "idade", "fieldValue": "={{ $json.idade }}"},
+            {"fieldId": "sexo", "fieldValue": "={{ $json.sexo }}"},
+            {"fieldId": "segmento", "fieldValue": "={{ $json.segmento }}"},
+            {"fieldId": "prioridade", "fieldValue": "={{ $json.prioridade }}"},
+            {"fieldId": "dias_inativo_estimado", "fieldValue": "={{ $json.dias_inativo_estimado }}"},
+            {"fieldId": "potencial_reativacao", "fieldValue": "={{ $json.potencial_reativacao }}"},
+            {"fieldId": "data_segmentacao", "fieldValue": "={{ new Date().toISOString().split('T')[0] }}"}
+          ]
+        }
+      },
+      "id": "save-segments",
+      "name": "Save Segmentation Results",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "language": "javascript",
+        "jsCode": "// Gerar relatório de segmentação\nconst students = $input.all();\n\nconst summary = {\n  total_inativos: students.length,\n  por_segmento: {\n    QUENTE: students.filter(s => s.json.segmento === 'QUENTE').length,\n    MORNO: students.filter(s => s.json.segmento === 'MORNO').length,\n    FRIO: students.filter(s => s.json.segmento === 'FRIO').length,\n    CONGELADO: students.filter(s => s.json.segmento === 'CONGELADO').length\n  },\n  potencial_reativacao: {\n    ALTO: students.filter(s => s.json.potencial_reativacao === 'ALTO').length,\n    MEDIO: students.filter(s => s.json.potencial_reativacao === 'MEDIO').length,\n    BAIXO: students.filter(s => s.json.potencial_reativacao === 'BAIXO').length\n  },\n  estimativa_receita: {\n    mensal_potencial: students.filter(s => s.json.segmento === 'QUENTE').length * 129, // R$ 129 mensalidade\n    meta_reativacao_30pct: Math.floor(students.length * 0.3) * 129\n  },\n  data_segmentacao: new Date().toISOString(),\n  academia: 'Full Force Academia - Matupá-MT'\n};\n\nreturn { json: summary };"
+      },
+      "id": "generate-report",
+      "name": "Generate Segmentation Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Active Students",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get General Students",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Students": {
+      "main": [
+        [
+          {
+            "node": "Analyze Inactive Students",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get General Students": {
+      "main": [
+        [
+          {
+            "node": "Analyze Inactive Students",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Analyze Inactive Students": {
+      "main": [
+        [
+          {
+            "node": "Save Segmentation Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Segmentation Results": {
+      "main": [
+        [
+          {
+            "node": "Generate Segmentation Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["academia", "segmentacao", "analytics"]
+}

@@ -1,0 +1,306 @@
+{
+  "name": "5 - Sofia Follow-up Engine - Adaptive Workflows",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */3 * * *"
+            }
+          ]
+        }
+      },
+      "id": "followup-scheduler-101",
+      "name": "Every 3 Hours Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "16ftXuNF2ssAG74dPcsZaCJD4TxfYEjd-bnrRjk7l68I",
+        "sheetName": "Sofia_Conversations",
+        "range": "A:Z",
+        "valueInputMode": "defineBelow"
+      },
+      "id": "read-conversations-102",
+      "name": "Read Sofia Conversations",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        400,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Full Force Academia"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sofia Adaptive Follow-up Engine\\nconst items = [];\\nconst now = new Date();\\n\\nfor (const item of $input.all()) {\\n  const data = item.json;\\n  const lastContact = new Date(data.timestamp || now);\\n  const hoursAgo = (now - lastContact) / (1000 * 60 * 60);\\n  const customerType = data.tipo_cliente || 'prospect';\\n  const score = parseInt(data.score_cliente) || 50;\\n  const lastAction = data.decisao_sofia || 'unknown';\\n  \\n  // ADAPTIVE FOLLOW-UP RULES\\n  let shouldFollowUp = false;\\n  let followUpType = 'none';\\n  let priority = 'low';\\n  let message = '';\\n  \\n  // EX-ALUNOS WORKFLOW\\n  if (customerType === 'ex_aluno') {\\n    if (score >= 70 && hoursAgo >= 24 && !data.seguimento_feito) {\\n      shouldFollowUp = true;\\n      followUpType = 'ex_aluno_hot';\\n      priority = 'high';\\n      message = `Oi! Pensei em você hoje! 😊\\\\n\\\\nJá decidiu sobre voltar a treinar? Aquela oferta de 20% off + semana grátis ainda vale!\\\\n\\\\nE tem mais: chegaram equipamentos novos que você vai adorar! 🏋️‍♀️\\\\n\\\\nQuer que eu separe um horário para você conhecer as novidades?`;\\n    } else if (score >= 50 && hoursAgo >= 72) {\\n      shouldFollowUp = true;\\n      followUpType = 'ex_aluno_warm';\\n      priority = 'medium';\\n      message = `E aí! Como você está? 💪\\\\n\\\\nVi que você demonstrou interesse em voltar... A Full Force está com cara nova!\\\\n\\\\n🎁 Que tal uma visita sem compromisso?\\\\n🏋️‍♀️ Posso mostrar tudo que mudou\\\\n⏰ 15 minutos do seu tempo\\\\n\\\\nQual o melhor dia para você?`;\\n    }\\n  }\\n  \\n  // FREE PASS WORKFLOW\\n  else if (customerType === 'free_pass') {\\n    if (hoursAgo >= 48 && lastAction !== 'oferecer_planos') {\\n      shouldFollowUp = true;\\n      followUpType = 'free_pass_conversion';\\n      priority = 'high';\\n      message = `Como estão sendo seus treinos? 🎉\\\\n\\\\nJá são ${Math.floor(hoursAgo/24)} dias do seu Free Pass! O tempo está voando, né?\\\\n\\\\n**OFERTA ESPECIAL PARA VOCÊ:**\\n💥 Matrícula sem taxa (economia R$ 50)\\n💥 Primeiro mês R$ 149 (desconto R$ 30)\\n💥 Garante sua vaga nos horários que você gosta\\n\\\\nSó até amanhã! Confirmo para você? 🚀`;\\n    } else if (hoursAgo >= 120) { // 5 dias\\n      shouldFollowUp = true;\\n      followUpType = 'free_pass_urgent';\\n      priority = 'urgent';\\n      message = `Oi! Seu Free Pass está acabando hoje! 😱\\\\n\\\\nNão queremos que você pare de treinar! Que tal garantir sua continuidade?\\\\n\\\\n🔥 **ÚLTIMA CHANCE:**\\n✅ Sem taxa de matrícula\\n✅ Desconto especial primeiro mês\\n✅ Mesmos horários que você já conhece\\n\\\\nPosso processar sua matrícula agora mesmo! O que acha? 💪`;\\n    }\\n  }\\n  \\n  // AMIGO BÔNUS WORKFLOW\\n  else if (customerType === 'amigo_bonus') {\\n    if (hoursAgo >= 168 && !data.conversao_tentada) { // 7 dias\\n      shouldFollowUp = true;\\n      followUpType = 'amigo_engagement';\\n      priority = 'medium';\\n      message = `E aí! Como está sendo treinar na Full Force? 💪\\\\n\\\\nJá uma semana que você está conosco! Sentindo a diferença?\\\\n\\\\nSeu amigo teve uma ótima ideia te trazendo aqui! 😊\\\\n\\\\nConta pra mim: qual exercício você mais gostou até agora?`;\\n    } else if (hoursAgo >= 600) { // 25 dias (5 dias antes do fim)\\n      shouldFollowUp = true;\\n      followUpType = 'amigo_conversion';\\n      priority = 'urgent';\\n      message = `Seu mês de cortesia está chegando ao fim! 😱\\\\n\\\\nMas não queremos que você vá embora! Você já faz parte da família Full Force! 🏋️‍♀️\\\\n\\\\n**OFERTA EXCLUSIVA AMIGO:**\\n🎁 30% de desconto nos primeiros 3 meses\\n🎁 Sem taxa de matrícula\\n🎁 Você pode trazer outro amigo grátis também!\\\\n\\\\nVamos continuar juntos? Só preciso confirmar! 🚀`;\\n    }\\n  }\\n  \\n  // PROSPECTS NORMAIS\\n  else if (customerType === 'prospect') {\\n    if (score >= 60 && hoursAgo >= 48) {\\n      shouldFollowUp = true;\\n      followUpType = 'prospect_nurture';\\n      priority = 'medium';\\n      message = `Oi! Tudo bem? 😊\\\\n\\\\nVi que você tem interesse na Full Force Academia!\\\\n\\\\nQue tal conhecer? Nosso Free Pass de 5 dias é perfeito para você experimentar sem pressa!\\\\n\\\\n🎁 Totalmente grátis\\n🏋️‍♀️ Conhece todos os equipamentos\\n👥 Sente o clima da nossa comunidade\\n\\\\nPosso agendar para quando você preferir! Que dia é bom?`;\\n    }\\n  }\\n  \\n  if (shouldFollowUp) {\\n    items.push({\\n      json: {\\n        telefone: data.telefone,\\n        tipo_seguimento: followUpType,\\n        prioridade: priority,\\n        mensagem: message,\\n        score_cliente: score,\\n        tipo_cliente: customerType,\\n        horas_desde_ultimo_contato: Math.round(hoursAgo),\\n        timestamp_seguimento: now.toISOString(),\\n        contexto_original: data.contexto_detectado,\\n        acao_anterior: lastAction\\n      }\\n    });\\n  }\\n}\\n\\nconsole.log(`Sofia identificou ${items.length} follow-ups para executar`);\\nreturn items;"
+      },
+      "id": "sofia-adaptive-logic-103",
+      "name": "Sofia Adaptive Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "priority-urgent",
+              "leftValue": "={{ $json.prioridade }}",
+              "rightValue": "urgent",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "priority-router-104",
+      "name": "Priority Router",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        800,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/send-message",
+        "options": {
+          "bodyContentType": "json",
+          "jsonBody": "={\"to\": \"{{ $json.telefone }}\", \"message\": \"{{ $json.mensagem }}\"}",
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxRetries": 3,
+            "retryDelay": 3000
+          }
+        }
+      },
+      "id": "send-urgent-followup-105",
+      "name": "Send Urgent Follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        300
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/send-message",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5,
+              "batchInterval": 30000
+            }
+          },
+          "retry": {
+            "enabled": true,
+            "maxRetries": 3,
+            "retryDelay": 3000
+          }
+        }
+      },
+      "id": "send-normal-followup-106",
+      "name": "Send Normal Follow-up",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        500
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sofia Learning & Optimization Engine\\nconst results = $input.all();\\nconst timestamp = new Date().toISOString();\\n\\n// Análise de performance\\nconst successful = results.filter(r => r.json.success || !r.json.error).length;\\nconst failed = results.length - successful;\\nconst successRate = ((successful / results.length) * 100).toFixed(1);\\n\\n// Análise por tipo de follow-up\\nconst byType = {};\\nresults.forEach(r => {\\n  const type = r.json.tipo_seguimento || 'unknown';\\n  if (!byType[type]) byType[type] = { sent: 0, success: 0 };\\n  byType[type].sent++;\\n  if (r.json.success || !r.json.error) byType[type].success++;\\n});\\n\\n// Otimizações sugeridas\\nconst optimizations = [];\\nif (successRate < 85) {\\n  optimizations.push('Ajustar horários de envio');\\n}\\nif (byType.ex_aluno_hot?.success / byType.ex_aluno_hot?.sent < 0.8) {\\n  optimizations.push('Melhorar mensagens para ex-alunos quentes');\\n}\\nif (byType.free_pass_conversion?.success / byType.free_pass_conversion?.sent < 0.7) {\\n  optimizations.push('Revisar estratégia de conversão Free Pass');\\n}\\n\\nreturn {\\n  timestamp: timestamp,\\n  total_followups: results.length,\\n  successful_sends: successful,\\n  failed_sends: failed,\\n  success_rate: successRate + '%',\\n  performance_by_type: byType,\\n  optimizations_suggested: optimizations,\\n  next_analysis: new Date(Date.now() + 3*60*60*1000).toISOString(), // 3 horas\\n  academy: 'Full Force Academia',\\n  sofia_engine_version: '1.0'\\n};"
+      },
+      "id": "sofia-analytics-107",
+      "name": "Sofia Analytics Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": "16ftXuNF2ssAG74dPcsZaCJD4TxfYEjd-bnrRjk7l68I",
+        "sheetName": "Sofia_Performance",
+        "columnToMatchOn": "timestamp",
+        "valueInputMode": "defineBelow",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "timestamp",
+              "fieldValue": "={{ $json.timestamp }}"
+            },
+            {
+              "fieldId": "total_followups",
+              "fieldValue": "={{ $json.total_followups }}"
+            },
+            {
+              "fieldId": "success_rate",
+              "fieldValue": "={{ $json.success_rate }}"
+            },
+            {
+              "fieldId": "performance_summary",
+              "fieldValue": "={{ JSON.stringify($json.performance_by_type) }}"
+            },
+            {
+              "fieldId": "optimizations",
+              "fieldValue": "={{ $json.optimizations_suggested.join('; ') }}"
+            }
+          ]
+        }
+      },
+      "id": "log-performance-108",
+      "name": "Log Performance Metrics",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1400,
+        400
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Full Force Academia"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every 3 Hours Check": {
+      "main": [
+        [
+          {
+            "node": "Read Sofia Conversations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sofia Conversations": {
+      "main": [
+        [
+          {
+            "node": "Sofia Adaptive Logic",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sofia Adaptive Logic": {
+      "main": [
+        [
+          {
+            "node": "Priority Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Priority Router": {
+      "main": [
+        [
+          {
+            "node": "Send Urgent Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Normal Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Urgent Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Sofia Analytics Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Normal Follow-up": {
+      "main": [
+        [
+          {
+            "node": "Sofia Analytics Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sofia Analytics Engine": {
+      "main": [
+        [
+          {
+            "node": "Log Performance Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5",
+  "meta": {
+    "instanceId": "full-force-academia-n8n"
+  },
+  "id": "5",
+  "tags": [
+    {
+      "createdAt": "2025-09-12T23:15:00.000Z",
+      "updatedAt": "2025-09-12T23:15:00.000Z",
+      "id": "2",
+      "name": "Sofia Follow-up Engine"
+    }
+  ]
+}

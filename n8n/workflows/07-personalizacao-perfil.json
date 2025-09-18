@@ -1,0 +1,255 @@
+{
+  "name": "Personalização por Perfil - Academia Full Force",
+  "nodes": [
+    {
+      "id": "7p8q9r0s-t1u2-3456-789f-ghijk0123456",
+      "name": "Webhook Personalização",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "path": "personalizacao-perfil",
+        "httpMethod": "POST",
+        "responseMode": "responseNode"
+      }
+    },
+    {
+      "id": "8q9r0s1t-u2v3-4567-890f-ghijk1234567",
+      "name": "Buscar Perfil Completo",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  m.*,\n  -- Histórico de atividades\n  COALESCE(at.modalidade_preferida, 'musculação') as modalidade_preferida,\n  COALESCE(at.horario_preferido, 'manhã') as horario_preferido,\n  COALESCE(at.frequencia_semanal, 3) as frequencia_semanal,\n  \n  -- Dados demográficos\n  CASE \n    WHEN m.idade BETWEEN 18 AND 25 THEN 'jovem'\n    WHEN m.idade BETWEEN 26 AND 35 THEN 'adulto_jovem'\n    WHEN m.idade BETWEEN 36 AND 50 THEN 'adulto'\n    ELSE 'senior'\n  END as faixa_etaria,\n  \n  -- Comportamento de engajamento\n  COALESCE(eng.score_engajamento, 50) as score_engajamento,\n  COALESCE(eng.responde_whatsapp, true) as responde_whatsapp,\n  COALESCE(eng.prefere_promocao, false) as prefere_promocao,\n  \n  -- Dados financeiros\n  COALESCE(fin.inadimplente, false) as inadimplente,\n  COALESCE(fin.plano_premium, false) as plano_premium\n  \nFROM academia_members m\nLEFT JOIN member_activities at ON m.id = at.member_id\nLEFT JOIN member_engagement eng ON m.id = eng.member_id  \nLEFT JOIN member_financial fin ON m.id = fin.member_id\nWHERE m.whatsapp_formatado = '{{ $json.whatsapp_number }}'"
+      }
+    },
+    {
+      "id": "9r0s1t2u-v3w4-5678-901f-ghijk2345678",
+      "name": "Análise de Perfil IA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Análise avançada de perfil para personalização\nconst member = $input.first().json;\n\n// Determinar personas baseadas em múltiplos fatores\nfunction determinePersona(member) {\n  const { faixa_etaria, modalidade_preferida, score_engajamento, prefere_promocao, plano_premium, inadimplente } = member;\n  \n  // Persona 1: Fitness Enthusiast (Alto engajamento, premium)\n  if (score_engajamento > 70 && plano_premium) {\n    return {\n      persona: 'fitness_enthusiast',\n      tom: 'motivacional_técnico',\n      foco: 'performance_evolução',\n      emoji_style: '🏆💪🔥',\n      urgencia: 'baixa'\n    };\n  }\n  \n  // Persona 2: Bargain Hunter (Sensível a preço)\n  if (prefere_promocao || inadimplente) {\n    return {\n      persona: 'bargain_hunter', \n      tom: 'promocional_benefícios',\n      foco: 'valor_economia',\n      emoji_style: '💰🎁✅',\n      urgencia: 'alta'\n    };\n  }\n  \n  // Persona 3: Busy Professional (Baixo engajamento, falta tempo)\n  if (faixa_etaria === 'adulto' && score_engajamento < 40) {\n    return {\n      persona: 'busy_professional',\n      tom: 'prático_flexível', \n      foco: 'conveniência_tempo',\n      emoji_style: '⏰🎯💼',\n      urgencia: 'média'\n    };\n  }\n  \n  // Persona 4: Health Seeker (Sênior ou foco saúde)\n  if (faixa_etaria === 'senior' || modalidade_preferida.includes('funcional')) {\n    return {\n      persona: 'health_seeker',\n      tom: 'cuidado_bem_estar',\n      foco: 'saúde_qualidade_vida', \n      emoji_style: '🧘‍♀️💚🌟',\n      urgencia: 'baixa'\n    };\n  }\n  \n  // Persona 5: Social Butterfly (Jovem, atividades grupo)\n  if (faixa_etaria === 'jovem' && modalidade_preferida.includes('grupo')) {\n    return {\n      persona: 'social_butterfly',\n      tom: 'energia_comunidade',\n      foco: 'diversão_social',\n      emoji_style: '🎉👥💃', \n      urgencia: 'média'\n    };\n  }\n  \n  // Default: Casual Member\n  return {\n    persona: 'casual_member',\n    tom: 'amigável_simples',\n    foco: 'retorno_básico',\n    emoji_style: '😊🏋️👍',\n    urgencia: 'média'\n  };\n}\n\n// Gerar mensagem personalizada\nfunction generatePersonalizedMessage(member, persona, campaignType) {\n  const firstName = member.primeiro_nome || member.nome_completo.split(' ')[0];\n  const { tom, foco, emoji_style } = persona;\n  \n  const templates = {\n    fitness_enthusiast: {\n      QUENTE: `${firstName}, seus ganhos estão te esperando! 🏆 Que tal quebrarmos seu PR essa semana? Seu treino personalizado já está pronto! 💪🔥`,\n      MORNO: `${firstName}, seu corpo sente falta do desafio! 🔥 Programa especial de retorno: avaliação biomecânica + treino periodizado. Vamos evoluir! 🏆💪`,\n      FRIO: `${firstName}, é hora do COMEBACK! 🚀 Treino de retorno gradual + acompanhamento técnico individual. Seus músculos lembram! 💪🎯`\n    },\n    bargain_hunter: {\n      QUENTE: `${firstName}, OFERTA RELÂMPAGO! ⚡ 50% OFF na volta + kit academia GRÁTIS! Só hoje! Responda JÁ! 💰🎁`,\n      MORNO: `${firstName}, 🚨 PROMOÇÃO EXCLUSIVA: 3 meses pelo preço de 1 + matrícula grátis! Economize R$ 270! Válido 48h! 💰✅`,\n      FRIO: `${firstName}, ÚLTIMA CHANCE! 🔥 70% OFF + sem taxa de adesão + 1 mês grátis! Essa é THE oferta do ano! 🎁💰⏰`\n    },\n    busy_professional: {\n      QUENTE: `${firstName}, treino EXPRESS em 30min! ⏰ Horários flexíveis 6h-22h. Malhe no seu tempo, sem stress! 🎯💼`,\n      MORNO: `${firstName}, academia que SE ADAPTA a você! ⏰ App próprio + treinos 24h + planos flexíveis. Produtividade em 1° lugar! 💼🎯`,\n      FRIO: `${firstName}, SOLUÇÃO para sua agenda! 🎯 Treino home + academia quando quiser + app premium. Só 30min/dia! ⏰💪`\n    },\n    health_seeker: {\n      QUENTE: `${firstName}, cuide de si com carinho! 💚 Atividades leves, acompanhamento profissional e ambiente acolhedor te esperam! 🧘‍♀️🌟`,\n      MORNO: `${firstName}, seu bem-estar é prioridade! 🌟 Programa sênior: fisioterapia + pilates + musculação adaptada. Saúde em 1° lugar! 💚🧘‍♀️`,\n      FRIO: `${firstName}, movimento é vida! 🌟 Volta gradual com foco na sua saúde: exercícios terapêuticos + acompanhamento médico! 💚🧘‍♀️`\n    },\n    social_butterfly: {\n      QUENTE: `${firstName}, a galera tá com saudade! 🎉 Aulas em grupo, eventos exclusivos e aquela energia contagiante! Bora? 👥💃`,\n      MORNO: `${firstName}, NOVIDADE! 🎉 Aulas temáticas + challenges em grupo + eventos sociais! A academia virou um point! 👥💃🔥`,\n      FRIO: `${firstName}, a comunidade Full Force te chama! 🎉 Volta com tudo: grupo VIP + eventos exclusivos + amizades pra vida! 👥💃🌟`\n    },\n    casual_member: {\n      QUENTE: `Oi ${firstName}! 😊 Que tal voltarmos aos poucos? Treino personalizado e todo apoio que você precisa! 🏋️👍`,\n      MORNO: `${firstName}, preparamos um plano especial para você! 😊 Avaliação + programa personalizado + acompanhamento. Vamos juntos! 🏋️💪`,\n      FRIO: `${firstName}, nova chance de cuidar de você! 😊 Volta sem pressa: plano flexível + suporte total da nossa equipe! 🏋️👍🌟`\n    }\n  };\n  \n  return templates[persona.persona]?.[campaignType] || templates.casual_member[campaignType];\n}\n\n// Processar membro\nconst persona = determinePersona(member);\nconst campaignType = member.classificacao_reativacao || 'MORNO';\nconst personalizedMessage = generatePersonalizedMessage(member, persona, campaignType);\n\n// Determinar melhor horário de envio\nconst bestTimeToSend = (() => {\n  const horarioPreferido = member.horario_preferido;\n  const currentHour = new Date().getHours();\n  \n  if (horarioPreferido === 'manhã' && currentHour < 10) return 'immediate';\n  if (horarioPreferido === 'tarde' && currentHour >= 12 && currentHour < 18) return 'immediate';\n  if (horarioPreferido === 'noite' && currentHour >= 18) return 'immediate';\n  \n  // Agendar para horário preferido\n  return horarioPreferido === 'manhã' ? '08:00' : \n         horarioPreferido === 'tarde' ? '14:00' : '19:00';\n})();\n\nreturn [{\n  json: {\n    ...member,\n    persona: persona,\n    personalizedMessage: personalizedMessage,\n    bestTimeToSend: bestTimeToSend,\n    campaignType: campaignType,\n    processingTimestamp: new Date().toISOString(),\n    \n    // Dados para tracking\n    personalization: {\n      persona_detected: persona.persona,\n      tone_used: persona.tom,\n      focus_area: persona.foco,\n      urgency_level: persona.urgencia,\n      engagement_score: member.score_engajamento\n    }\n  }\n}];"
+      }
+    },
+    {
+      "id": "0s1t2u3v-w4x5-6789-012f-ghijk3456789",
+      "name": "Decidir Timing",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        800,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "immediate-send",
+              "leftValue": "={{ $json.bestTimeToSend }}",
+              "rightValue": "immediate",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "1t2u3v4w-x5y6-7890-123f-ghijk4567890",
+      "name": "Enviar Imediatamente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1000,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://whatsapp-api:3001/send-message",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.whatsapp_formatado }}\",\n  \"message\": \"{{ $json.personalizedMessage }}\"\n}",
+        "options": {
+          "timeout": 10000
+        },
+        "onError": "continueRegularOutput",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 3000
+      }
+    },
+    {
+      "id": "2u3v4w5x-y6z7-8901-234f-ghijk5678901",
+      "name": "Agendar Para Horário Ideal",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1000,
+        400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO message_schedule (\n  student_id,\n  whatsapp_number,\n  message_content,\n  scheduled_time,\n  persona_type,\n  campaign_type,\n  priority,\n  created_at\n) VALUES (\n  {{ $json.id }},\n  '{{ $json.whatsapp_formatado }}',\n  '{{ $json.personalizedMessage }}',\n  CURRENT_DATE + TIME '{{ $json.bestTimeToSend }}',\n  '{{ $json.persona.persona }}',\n  '{{ $json.campaignType }}',\n  CASE \n    WHEN '{{ $json.persona.urgencia }}' = 'alta' THEN 1\n    WHEN '{{ $json.persona.urgencia }}' = 'média' THEN 2\n    ELSE 3\n  END,\n  CURRENT_TIMESTAMP\n)"
+      }
+    },
+    {
+      "id": "3v4w5x6y-z7a8-9012-345f-ghijk6789012",
+      "name": "Log Personalização",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO personalization_logs (\n  student_id,\n  persona_detected,\n  tone_used,\n  focus_area,\n  urgency_level,\n  engagement_score,\n  message_sent,\n  delivery_method,\n  created_at\n) VALUES (\n  {{ $json.id }},\n  '{{ $json.persona.persona }}',\n  '{{ $json.persona.tom }}',\n  '{{ $json.persona.foco }}',\n  '{{ $json.persona.urgencia }}',\n  {{ $json.score_engajamento }},\n  '{{ $json.personalizedMessage }}',\n  CASE WHEN '{{ $json.bestTimeToSend }}' = 'immediate' THEN 'immediate' ELSE 'scheduled' END,\n  CURRENT_TIMESTAMP\n)"
+      }
+    },
+    {
+      "id": "4w5x6y7z-a8b9-0123-456f-ghijk7890123",
+      "name": "Response Personalização",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1400,
+        300
+      ],
+      "parameters": {
+        "options": {
+          "responseBody": "={\n  \"success\": true,\n  \"personalization\": {\n    \"student\": \"{{ $json.nome_completo }}\",\n    \"persona\": \"{{ $json.persona.persona }}\",\n    \"message\": \"{{ $json.personalizedMessage }}\",\n    \"delivery\": \"{{ $json.bestTimeToSend === 'immediate' ? 'sent_immediately' : 'scheduled_for_' + $json.bestTimeToSend }}\",\n    \"engagement_score\": {{ $json.score_engajamento }},\n    \"campaign_type\": \"{{ $json.campaignType }}\"\n  }\n}",
+          "responseContentType": "application/json",
+          "responseStatusCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Personalização": {
+      "main": [
+        [
+          {
+            "node": "Buscar Perfil Completo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Perfil Completo": {
+      "main": [
+        [
+          {
+            "node": "Análise de Perfil IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Análise de Perfil IA": {
+      "main": [
+        [
+          {
+            "node": "Decidir Timing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decidir Timing": {
+      "main": [
+        [
+          {
+            "node": "Enviar Imediatamente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agendar Para Horário Ideal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Imediatamente": {
+      "main": [
+        [
+          {
+            "node": "Log Personalização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agendar Para Horário Ideal": {
+      "main": [
+        [
+          {
+            "node": "Log Personalização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Personalização": {
+      "main": [
+        [
+          {
+            "node": "Response Personalização",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "timezone": "America/Sao_Paulo"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "academia-personalization",
+      "name": "Academia Personalization"
+    },
+    {
+      "id": "ai-personas",
+      "name": "AI Personas"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-15T21:52:00.000Z",
+  "versionId": "1"
+}

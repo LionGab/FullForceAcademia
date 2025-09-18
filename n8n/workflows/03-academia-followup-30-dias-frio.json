@@ -1,0 +1,208 @@
+{
+  "name": "Academia Follow-up 30 Dias - Promoção Especial",
+  "nodes": [
+    {
+      "id": "4i5j6k7l-m8n9-0123-456b-cdefg0123456",
+      "name": "Trigger Diário",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "5j6k7l8m-n9o0-1234-567b-cdefg1234567",
+      "name": "Buscar Alunos 30 Dias Inativos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  nome_completo,\n  primeiro_nome,\n  whatsapp_formatado,\n  dias_inativo,\n  id\nFROM academia_members \nWHERE status_atividade = 'inactive' \n  AND dias_inativo = 30\n  AND classificacao_reativacao = 'FRIO'\n  AND consentimento_marketing = true\n  AND tentativas_reativacao < 3\nORDER BY ultima_tentativa_reativacao ASC NULLS FIRST\nLIMIT 20"
+      }
+    },
+    {
+      "id": "6k7l8m9n-o0p1-2345-678b-cdefg2345678",
+      "name": "Processar Promoção Especial",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Processar cada aluno para promoção especial\nconst items = $input.all();\nconst processedItems = [];\n\nfor (const item of items) {\n  const firstName = item.json.primeiro_nome || item.json.nome_completo.split(' ')[0];\n  const whatsappNumber = item.json.whatsapp_formatado;\n  \n  // Template de mensagem FRIO (30 dias) - Promoção especial\n  const message = `${firstName}, que tal uma SEGUNDA CHANCE? 🎯 Oferta especial: 🎁 7 dias grátis 🎁 Reavaliação completa 🎁 Novo plano de treino. Válido até o fim do mês!`;\n  \n  processedItems.push({\n    json: {\n      number: whatsappNumber,\n      message: message,\n      studentName: firstName,\n      studentId: item.json.id,\n      daysSinceLastActivity: item.json.dias_inativo,\n      campaignType: 'FRIO_30_DIAS',\n      timestamp: new Date().toISOString()\n    }\n  });\n}\n\nreturn processedItems;"
+      }
+    },
+    {
+      "id": "7l8m9n0o-p1q2-3456-789b-cdefg3456789",
+      "name": "Rate Limit Control",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        750,
+        300
+      ],
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "8m9n0o1p-q2r3-4567-890b-cdefg4567890",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://whatsapp-api:3001/send-message",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.number }}\",\n  \"message\": \"{{ $json.message }}\"\n}",
+        "options": {
+          "timeout": 10000
+        },
+        "onError": "continueRegularOutput",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 3000
+      }
+    },
+    {
+      "id": "9n0o1p2q-r3s4-5678-901b-cdefg5678901",
+      "name": "Registrar Tentativa",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE academia_members \nSET \n  tentativas_reativacao = tentativas_reativacao + 1,\n  ultima_tentativa_reativacao = CURRENT_TIMESTAMP\nWHERE whatsapp_formatado = '{{ $json.number }}'"
+      }
+    },
+    {
+      "id": "0o1p2q3r-s4t5-6789-012b-cdefg6789012",
+      "name": "Log Campanha",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1300,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO campaign_logs (\n  student_id,\n  campaign_type,\n  message_sent,\n  whatsapp_number,\n  status,\n  sent_at\n) VALUES (\n  {{ $json.studentId }},\n  '{{ $json.campaignType }}',\n  '{{ $json.message }}',\n  '{{ $json.number }}',\n  'sent',\n  CURRENT_TIMESTAMP\n)"
+      }
+    }
+  ],
+  "connections": {
+    "Trigger Diário": {
+      "main": [
+        [
+          {
+            "node": "Buscar Alunos 30 Dias Inativos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Alunos 30 Dias Inativos": {
+      "main": [
+        [
+          {
+            "node": "Processar Promoção Especial",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Promoção Especial": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Control",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Control": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Registrar Tentativa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar Tentativa": {
+      "main": [
+        [
+          {
+            "node": "Log Campanha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "timezone": "America/Sao_Paulo"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "academia-reativacao",
+      "name": "Academia Reativação"
+    },
+    {
+      "id": "whatsapp-automation",
+      "name": "WhatsApp Automation"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-15T21:44:00.000Z",
+  "versionId": "1"
+}

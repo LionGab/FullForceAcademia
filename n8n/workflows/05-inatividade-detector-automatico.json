@@ -1,0 +1,243 @@
+{
+  "name": "Detector Automático de Inatividade",
+  "nodes": [
+    {
+      "id": "9x0y1z2a-b3c4-5678-901d-efghi0123456",
+      "name": "Trigger Análise Diária",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "0y1z2a3b-c4d5-6789-012d-efghi1234567",
+      "name": "Buscar Últimas Atividades",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  m.id,\n  m.nome_completo,\n  m.primeiro_nome,\n  m.whatsapp_formatado,\n  m.status_atividade,\n  COALESCE(\n    EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - m.ultima_atividade))::integer / 86400,\n    999\n  ) as dias_inativo\nFROM academia_members m\nWHERE m.consentimento_marketing = true\n  AND m.status_atividade != 'inactive_final'\nORDER BY dias_inativo DESC"
+      }
+    },
+    {
+      "id": "1z2a3b4c-d5e6-7890-123d-efghi2345678",
+      "name": "Classificar Inatividade",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Classificar membros por nível de inatividade\nconst items = $input.all();\nconst updates = [];\n\nfor (const item of items) {\n  const diasInativo = item.json.dias_inativo;\n  const currentStatus = item.json.status_atividade;\n  \n  let newStatus = 'active';\n  let classificacao = 'ATIVO';\n  \n  // Determinar status e classificação baseados nos dias de inatividade\n  if (diasInativo >= 90) {\n    newStatus = 'inactive';\n    classificacao = 'CONGELADO';\n  } else if (diasInativo >= 60) {\n    newStatus = 'inactive';\n    classificacao = 'FRIO';\n  } else if (diasInativo >= 30) {\n    newStatus = 'inactive';\n    classificacao = 'MORNO';\n  } else if (diasInativo >= 7) {\n    newStatus = 'inactive';\n    classificacao = 'QUENTE';\n  }\n  \n  // Só processar se houve mudança de status\n  if (currentStatus !== newStatus) {\n    updates.push({\n      json: {\n        id: item.json.id,\n        nome_completo: item.json.nome_completo,\n        primeiro_nome: item.json.primeiro_nome,\n        whatsapp_formatado: item.json.whatsapp_formatado,\n        dias_inativo: diasInativo,\n        old_status: currentStatus,\n        new_status: newStatus,\n        classificacao_reativacao: classificacao,\n        timestamp: new Date().toISOString()\n      }\n    });\n  }\n}\n\nreturn updates;"
+      }
+    },
+    {
+      "id": "2a3b4c5d-e6f7-8901-234d-efghi3456789",
+      "name": "Atualizar Status Membros",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        800,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE academia_members \nSET \n  status_atividade = '{{ $json.new_status }}',\n  classificacao_reativacao = '{{ $json.classificacao_reativacao }}',\n  dias_inativo = {{ $json.dias_inativo }},\n  updated_at = CURRENT_TIMESTAMP\nWHERE id = {{ $json.id }}"
+      }
+    },
+    {
+      "id": "3b4c5d6e-f7g8-9012-345d-efghi4567890",
+      "name": "Log Mudanças de Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1000,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO status_change_logs (\n  student_id,\n  old_status,\n  new_status,\n  classification,\n  days_inactive,\n  changed_at\n) VALUES (\n  {{ $json.id }},\n  '{{ $json.old_status }}',\n  '{{ $json.new_status }}',\n  '{{ $json.classificacao_reativacao }}',\n  {{ $json.dias_inativo }},\n  CURRENT_TIMESTAMP\n)"
+      }
+    },
+    {
+      "id": "4c5d6e7f-g8h9-0123-456d-efghi5678901",
+      "name": "Trigger Campanha Imediata",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "trigger-immediate",
+              "leftValue": "={{ $json.new_status }}",
+              "rightValue": "inactive",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "5d6e7f8g-h9i0-1234-567d-efghi6789012",
+      "name": "Disparar Workflow Específico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1400,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/api/v1/workflows/{{ $json.classificacao_reativacao === 'QUENTE' ? 'quente-workflow-id' : $json.classificacao_reativacao === 'MORNO' ? 'morno-workflow-id' : $json.classificacao_reativacao === 'FRIO' ? 'frio-workflow-id' : 'congelado-workflow-id' }}/execute",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"studentData\": {\n    \"id\": {{ $json.id }},\n    \"nome_completo\": \"{{ $json.nome_completo }}\",\n    \"primeiro_nome\": \"{{ $json.primeiro_nome }}\",\n    \"whatsapp_formatado\": \"{{ $json.whatsapp_formatado }}\",\n    \"dias_inativo\": {{ $json.dias_inativo }},\n    \"classificacao\": \"{{ $json.classificacao_reativacao }}\"\n  }\n}",
+        "options": {
+          "timeout": 5000
+        },
+        "onError": "continueRegularOutput"
+      }
+    },
+    {
+      "id": "6e7f8g9h-i0j1-2345-678d-efghi7890123",
+      "name": "Relatório de Inatividade",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1400,
+        400
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  COUNT(*) as total_processados,\n  SUM(CASE WHEN new_status = 'inactive' THEN 1 ELSE 0 END) as novos_inativos,\n  AVG(dias_inativo) as media_dias_inativo\nFROM (\n  SELECT \n    '{{ $json.new_status }}' as new_status,\n    {{ $json.dias_inativo }} as dias_inativo\n) as temp_data"
+      }
+    }
+  ],
+  "connections": {
+    "Trigger Análise Diária": {
+      "main": [
+        [
+          {
+            "node": "Buscar Últimas Atividades",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Últimas Atividades": {
+      "main": [
+        [
+          {
+            "node": "Classificar Inatividade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classificar Inatividade": {
+      "main": [
+        [
+          {
+            "node": "Atualizar Status Membros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Status Membros": {
+      "main": [
+        [
+          {
+            "node": "Log Mudanças de Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Mudanças de Status": {
+      "main": [
+        [
+          {
+            "node": "Trigger Campanha Imediata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Campanha Imediata": {
+      "main": [
+        [
+          {
+            "node": "Disparar Workflow Específico",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Relatório de Inatividade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "timezone": "America/Sao_Paulo"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "academia-automation",
+      "name": "Academia Automation"
+    },
+    {
+      "id": "inactivity-detection",
+      "name": "Inactivity Detection"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-15T21:47:00.000Z",
+  "versionId": "1"
+}

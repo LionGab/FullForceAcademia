@@ -1,0 +1,233 @@
+{
+  "name": "Academia Follow-up 60 Dias - Última Chance",
+  "nodes": [
+    {
+      "id": "1p2q3r4s-t5u6-7890-123c-defgh0123456",
+      "name": "Trigger Diário",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "2q3r4s5t-u6v7-8901-234c-defgh1234567",
+      "name": "Buscar Alunos 60 Dias Inativos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  nome_completo,\n  primeiro_nome,\n  whatsapp_formatado,\n  dias_inativo,\n  id\nFROM academia_members \nWHERE status_atividade = 'inactive' \n  AND dias_inativo = 60\n  AND classificacao_reativacao = 'CONGELADO'\n  AND consentimento_marketing = true\n  AND tentativas_reativacao < 3\nORDER BY ultima_tentativa_reativacao ASC NULLS FIRST\nLIMIT 15"
+      }
+    },
+    {
+      "id": "3r4s5t6u-v7w8-9012-345c-defgh2345678",
+      "name": "Processar Última Chance",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Processar cada aluno para última chance\nconst items = $input.all();\nconst processedItems = [];\n\nfor (const item of items) {\n  const firstName = item.json.primeiro_nome || item.json.nome_completo.split(' ')[0];\n  const whatsappNumber = item.json.whatsapp_formatado;\n  \n  // Template de mensagem CONGELADO (60 dias) - Última chance\n  const message = `${firstName}, esta é a nossa ÚLTIMA CHANCE de te ter de volta! 😢 Oferta final: 50% OFF no primeiro mês + avaliação gratuita. Não perca essa oportunidade! 🏃‍♂️💨`;\n  \n  processedItems.push({\n    json: {\n      number: whatsappNumber,\n      message: message,\n      studentName: firstName,\n      studentId: item.json.id,\n      daysSinceLastActivity: item.json.dias_inativo,\n      campaignType: 'CONGELADO_60_DIAS',\n      timestamp: new Date().toISOString()\n    }\n  });\n}\n\nreturn processedItems;"
+      }
+    },
+    {
+      "id": "4s5t6u7v-w8x9-0123-456c-defgh3456789",
+      "name": "Rate Limit Control",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        750,
+        300
+      ],
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      }
+    },
+    {
+      "id": "5t6u7v8w-x9y0-1234-567c-defgh4567890",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://whatsapp-api:3001/send-message",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.number }}\",\n  \"message\": \"{{ $json.message }}\"\n}",
+        "options": {
+          "timeout": 10000
+        },
+        "onError": "continueRegularOutput",
+        "retryOnFail": true,
+        "maxTries": 3,
+        "waitBetweenTries": 3000
+      }
+    },
+    {
+      "id": "6u7v8w9x-y0z1-2345-678c-defgh5678901",
+      "name": "Registrar Tentativa",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1100,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE academia_members \nSET \n  tentativas_reativacao = tentativas_reativacao + 1,\n  ultima_tentativa_reativacao = CURRENT_TIMESTAMP\nWHERE whatsapp_formatado = '{{ $json.number }}'"
+      }
+    },
+    {
+      "id": "7v8w9x0y-z1a2-3456-789c-defgh6789012",
+      "name": "Log Campanha",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1300,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO campaign_logs (\n  student_id,\n  campaign_type,\n  message_sent,\n  whatsapp_number,\n  status,\n  sent_at\n) VALUES (\n  {{ $json.studentId }},\n  '{{ $json.campaignType }}',\n  '{{ $json.message }}',\n  '{{ $json.number }}',\n  'sent',\n  CURRENT_TIMESTAMP\n)"
+      }
+    },
+    {
+      "id": "8w9x0y1z-a2b3-4567-890c-defgh7890123",
+      "name": "Marcar Como Inativo Final",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1500,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE academia_members \nSET \n  status_atividade = 'inactive_final',\n  consentimento_marketing = false\nWHERE whatsapp_formatado = '{{ $json.number }}'\n  AND tentativas_reativacao >= 3"
+      }
+    }
+  ],
+  "connections": {
+    "Trigger Diário": {
+      "main": [
+        [
+          {
+            "node": "Buscar Alunos 60 Dias Inativos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Alunos 60 Dias Inativos": {
+      "main": [
+        [
+          {
+            "node": "Processar Última Chance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Última Chance": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Control",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Control": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Registrar Tentativa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar Tentativa": {
+      "main": [
+        [
+          {
+            "node": "Log Campanha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Campanha": {
+      "main": [
+        [
+          {
+            "node": "Marcar Como Inativo Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "timezone": "America/Sao_Paulo"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "id": "academia-reativacao",
+      "name": "Academia Reativação"
+    },
+    {
+      "id": "whatsapp-automation",
+      "name": "WhatsApp Automation"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-15T21:45:00.000Z",
+  "versionId": "1"
+}

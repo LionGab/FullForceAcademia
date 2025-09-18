@@ -1,0 +1,118 @@
+{
+  "name": "Academia WhatsApp + Google Sheets",
+  "active": false,
+  "nodes": [
+    {
+      "id": "sheets-trigger",
+      "name": "Google Sheets Trigger",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "triggerOn": "rowAdded",
+        "sheetId": "{{ $json.planilhaId }}",
+        "range": "A:Z"
+      }
+    },
+    {
+      "id": "processar-aluno",
+      "name": "Processar Dados Aluno",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "functionCode": "// Processar dados do aluno da planilha\nconst dados = $input.all()[0].json;\n\n// Extrair dados\nconst nomeCompleto = dados['Nome Completo'] || dados.A || '';\nconst telefone = dados['Telefone'] || dados.B || '';\nconst email = dados['Email'] || dados.C || '';\nconst status = dados['Status'] || dados.D || 'Ativo';\nconst plano = dados['Plano'] || dados.E || '';\n\n// Formatar WhatsApp\nfunction formatarWhatsApp(numero) {\n    if (!numero) return null;\n    const apenasNumeros = numero.toString().replace(/[^0-9]/g, '');\n\n    if (apenasNumeros.length === 11 && apenasNumeros.startsWith('65')) {\n        return `+55${apenasNumeros}`;\n    } else if (apenasNumeros.length === 10) {\n        return `+5565${apenasNumeros}`;\n    }\n    return `+5565${apenasNumeros}`;\n}\n\nconst whatsappFormatado = formatarWhatsApp(telefone);\nconst primeiroNome = nomeCompleto.split(' ')[0];\n\n// Determinar tipo de campanha baseado no status\nlet tipoCampanha = 'boas-vindas';\nif (status.toLowerCase().includes('inativo')) {\n    tipoCampanha = 'reativacao';\n} else if (status.toLowerCase().includes('trial')) {\n    tipoCampanha = 'conversao';\n}\n\nreturn {\n    json: {\n        nomeCompleto: nomeCompleto,\n        primeiroNome: primeiroNome,\n        telefone: telefone,\n        whatsapp: whatsappFormatado,\n        email: email,\n        status: status,\n        plano: plano,\n        tipoCampanha: tipoCampanha,\n        dataProcessamento: new Date().toISOString()\n    }\n};"
+      }
+    },
+    {
+      "id": "enviar-whatsapp-sheets",
+      "name": "Enviar WhatsApp da Planilha",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        600,
+        300
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "recipientPhoneNumber": "={{ $json.whatsapp }}",
+        "messageType": "text",
+        "text": "={{ 'Olá ' + $json.primeiroNome + '! 🏋️ Bem-vindo à Academia Matupá! Estamos prontos para ajudar você a alcançar seus objetivos. Digite MENU para ver nossas opções!' }}"
+      }
+    },
+    {
+      "id": "log-campanha-sheets",
+      "name": "Registrar Campanha",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        800,
+        300
+      ],
+      "parameters": {
+        "operation": "append",
+        "sheetId": "{{ $json.campanhasSheetId }}",
+        "range": "A:J",
+        "options": {
+          "valueInputOption": "USER_ENTERED"
+        },
+        "values": [
+          [
+            "={{ new Date().toISOString() }}",
+            "={{ $json.nomeCompleto }}",
+            "={{ $json.whatsapp }}",
+            "={{ $json.tipoCampanha }}",
+            "Mensagem de boas-vindas",
+            "Enviado",
+            "",
+            "",
+            "",
+            ""
+          ]
+        ]
+      }
+    }
+  ],
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Processar Dados Aluno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Dados Aluno": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp da Planilha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp da Planilha": {
+      "main": [
+        [
+          {
+            "node": "Registrar Campanha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

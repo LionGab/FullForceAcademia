@@ -1,0 +1,86 @@
+{
+  "name": "SIMPLE DEMO - Full Force Academia",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "test_message",
+              "name": "testMessage",
+              "value": "Sistema N8N + Google Sheets funcionando! ✅",
+              "type": "string"
+            },
+            {
+              "id": "google_sheets_id",
+              "name": "googleSheetsId",
+              "value": "16ftXuNF2ssAG74dPcsZaCJD4TxfYEjd-bnrRjk7l68I",
+              "type": "string"
+            },
+            {
+              "id": "timestamp",
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "set-test-data",
+      "name": "Set Test Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "contato@primeliontecnologia.com",
+        "toEmail": "contato@primeliontecnologia.com",
+        "subject": "✅ N8N Sistema Funcionando - Full Force Academia",
+        "message": "=🚀 **TESTE DE SISTEMA EXECUTADO**\n\n📅 **Data/Hora**: {{ $json.timestamp }}\n📊 **Google Sheets ID**: {{ $json.googleSheetsId }}\n💬 **Mensagem**: {{ $json.testMessage }}\n\n✅ **N8N está funcionando perfeitamente!**\n✅ **API Key configurada**\n✅ **Workflows prontos para importação**\n\n🎯 **Próximos passos**:\n1. Configurar credenciais Google Sheets\n2. Configurar SMTP\n3. Importar workflows principais\n\n🏋️‍♂️ **Full Force Academia - Matupá/MT**",
+        "options": {}
+      },
+      "id": "send-test-email",
+      "name": "Send Test Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [640, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Test Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Test Data": {
+      "main": [
+        [
+          {
+            "node": "Send Test Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

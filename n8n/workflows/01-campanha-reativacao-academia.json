@@ -1,0 +1,176 @@
+{
+  "name": "Academia WhatsApp - Campanha Reativação",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a0b1c2d3-e4f5-6789-abcd-ef0123456789",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "1QT4yy2AoI2gvnIxEhh31J8aq4c_yVJ_NCKk3bkgPo6w",
+        "sheetName": "Sheet1",
+        "range": "A:Z"
+      },
+      "id": "b1c2d3e4-f5a6-789b-cdef-012345678901",
+      "name": "Get Students Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "language": "javascript",
+        "jsCode": "// Processar dados dos alunos e preparar para WhatsApp\nconst students = $input.all();\nconst processed = [];\n\nfor (const student of students) {\n  const data = student.json;\n  \n  // Verificar se tem celular válido\n  const celular = data.celular || data.telefone || data.Celular || data.Telefone;\n  if (!celular) continue;\n  \n  // Formatar número WhatsApp (Matupá-MT código 65)\n  let whatsapp = celular.toString().replace(/\\D/g, '');\n  \n  // Adicionar código de área 5565 se necessário\n  if (whatsapp.length === 9) {\n    whatsapp = '5565' + whatsapp;\n  } else if (whatsapp.length === 11 && whatsapp.startsWith('65')) {\n    whatsapp = '55' + whatsapp;\n  } else if (whatsapp.length === 10 && whatsapp.startsWith('65')) {\n    whatsapp = '55' + whatsapp;\n  }\n  \n  // Classificar por segmento baseado na idade (simulação)\n  let segmento = 'FRIO';\n  let template = 'FRIO';\n  \n  if (data.idade || data.Idade) {\n    const idade = parseInt(data.idade || data.Idade);\n    if (idade < 25) {\n      segmento = 'QUENTE';\n      template = 'QUENTE';\n    } else if (idade < 35) {\n      segmento = 'MORNO';\n      template = 'MORNO';\n    }\n  }\n  \n  // Extrair primeiro nome\n  const nomeCompleto = data.nome_completo || data.nome || data.Nome || data['Nome Completo'] || '';\n  const primeiroNome = nomeCompleto.split(' ')[0];\n  \n  processed.push({\n    nome_completo: nomeCompleto,\n    primeiro_nome: primeiroNome,\n    celular: celular,\n    whatsapp: whatsapp,\n    idade: data.idade || data.Idade,\n    segmento: segmento,\n    template: template,\n    email: data.email || data.Email\n  });\n}\n\n// Limitar a 20 para teste inicial (respeitar rate limit)\nconst limited = processed.slice(0, 20);\n\nreturn limited.map(item => ({ json: item }));"
+      },
+      "id": "c2d3e4f5-6a7b-8c9d-ef01-23456789abcd",
+      "name": "Process Students Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Templates de mensagem por segmento\nconst templates = {\n  QUENTE: \"Oi {{$json.primeiro_nome}}! 🏋️ Sentimos sua falta na Full Force! Que tal voltarmos aos treinos? Posso agendar um horário especial pra você essa semana? 💪\",\n  MORNO: \"{{$json.primeiro_nome}}, preparamos um PLANO DE RETORNO especial pra você! ✅ Avaliação gratuita ✅ Programa personalizado ✅ Acompanhamento exclusivo. Responda EU QUERO! 🔥\",\n  FRIO: \"{{$json.primeiro_nome}}, que tal uma SEGUNDA CHANCE? 🎯 Oferta especial: 🎁 7 dias grátis 🎁 Reavaliação completa 🎁 Novo plano de treino. Válido até o fim do mês!\"\n};\n\nconst data = $json;\nconst template = templates[data.template] || templates.FRIO;\nconst message = template.replace(/{{\\$json\\.primeiro_nome}}/g, data.primeiro_nome);\n\nreturn {\n  ...data,\n  message: message\n};"
+      },
+      "id": "d3e4f5a6-7b8c-9def-0123-456789abcdef",
+      "name": "Generate Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "e4f5a6b7-8c9d-ef01-2345-6789abcdef01",
+      "name": "Rate Limit Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://whatsapp-api:3001/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.whatsapp }}\",\n  \"message\": \"{{ $json.message }}\"\n}"
+      },
+      "id": "f5a6b7c8-9def-0123-4567-89abcdef0123",
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n:5678/webhook/campaign-log",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={\n  \"timestamp\": \"{{ new Date().toISOString() }}\",\n  \"student_name\": \"{{ $json.nome_completo }}\",\n  \"whatsapp\": \"{{ $json.whatsapp }}\",\n  \"segment\": \"{{ $json.segmento }}\",\n  \"message_sent\": \"{{ $json.message }}\",\n  \"status\": \"sent\"\n}"
+      },
+      "id": "a6b7c8d9-ef01-2345-6789-abcdef012345",
+      "name": "Log Campaign Activity",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Students Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Students Data": {
+      "main": [
+        [
+          {
+            "node": "Process Students Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Students Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Message": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Delay": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Log Campaign Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["academia", "whatsapp", "reativacao"]
+}

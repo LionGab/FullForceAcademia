@@ -1,0 +1,190 @@
+{
+  "name": "Academia WhatsApp - Teste +5566999301589",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-academia-teste",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger-academia",
+      "name": "WhatsApp Webhook Academia",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Academia Matupá - Processamento de Mensagens WhatsApp\n// Número de teste: +5566999301589\n\nconst body = $input.all()[0].json.body;\nconst webhookBody = body || $input.all()[0].json;\n\n// Extrair dados da mensagem\nconst entry = webhookBody.entry?.[0];\nconst changes = entry?.changes?.[0];\nconst value = changes?.value;\nconst messages = value?.messages?.[0];\nconst contacts = value?.contacts?.[0];\n\n// Dados da mensagem\nconst from = messages?.from;\nconst messageText = messages?.text?.body || '';\nconst messageType = messages?.type;\nconst messageId = messages?.id;\nconst timestamp = messages?.timestamp;\n\n// Dados do contato\nconst contactName = contacts?.profile?.name || 'Cliente';\nconst phoneNumberId = value?.metadata?.phone_number_id;\n\n// Log detalhado\nconsole.log('='.repeat(50));\nconsole.log('📱 ACADEMIA MATUPÁ - MENSAGEM RECEBIDA');\nconsole.log('='.repeat(50));\nconsole.log('👤 De:', from);\nconsole.log('📝 Nome:', contactName);\nconsole.log('💬 Mensagem:', messageText);\nconsole.log('📱 Tipo:', messageType);\nconsole.log('🆔 ID:', messageId);\nconsole.log('⏰ Timestamp:', new Date(timestamp * 1000).toLocaleString('pt-BR'));\nconsole.log('📞 Phone ID:', phoneNumberId);\nconsole.log('='.repeat(50));\n\n// Verificar se é mensagem de texto\nif (messageType === 'text' && messageText) {\n  const texto = messageText.toLowerCase().trim();\n  let resposta = '';\n  let categoria = 'geral';\n\n  // Análise da mensagem e geração de resposta\n  if (texto.includes('teste') || texto.includes('test')) {\n    categoria = 'teste';\n    resposta = `✅ *TESTE REALIZADO COM SUCESSO!*\n\n🏋️ Academia Matupá - Sistema Online!\n📱 Bot funcionando perfeitamente!\n⏰ ${new Date().toLocaleString('pt-BR')}\n👤 Olá ${contactName}!\n\nDigite *menu* para ver todas as opções! 💪`;\n\n  } else if (texto.includes('menu') || texto.includes('opções') || texto.includes('opcoes')) {\n    categoria = 'menu';\n    resposta = `📋 *MENU ACADEMIA MATUPÁ*\n\n🧪 *teste* → Testar sistema\nℹ️ *info* → Informações completas\n💰 *precos* → Planos e valores\n📍 *endereco* → Nossa localização\n🕐 *horarios* → Funcionamento\n💪 *modalidades* → Atividades\n📝 *matricula* → Quero me matricular\n📞 *contato* → Falar com consultor\n🛑 *parar* → Parar mensagens\n\n💬 Digite qualquer opção acima!`;\n\n  } else if (texto.includes('info') || texto.includes('informação') || texto.includes('informacao')) {\n    categoria = 'informacoes';\n    resposta = `🏋️ *ACADEMIA MATUPÁ*\n\n📍 *Local:* Matupá - MT\n👥 *Membros ativos:* 457\n📈 *Taxa de retenção:* 96%\n⭐ *Avaliação:* 4.9/5.0\n\n💪 *Diferenciais:*\n• Equipamentos de última geração\n• Profissionais qualificados\n• Ambiente climatizado\n• Estacionamento gratuito\n• Aulas em grupo inclusas\n\n🎁 *PROMOÇÃO ESPECIAL:*\n• 1ª semana GRÁTIS\n• Avaliação física gratuita\n• Plano alimentar incluso\n\n📱 Interessado? Digite *matricula*`;\n\n  } else if (texto.includes('preço') || texto.includes('preco') || texto.includes('valor') || texto.includes('plano') || texto.includes('precos')) {\n    categoria = 'precos';\n    resposta = `💰 *PLANOS ACADEMIA MATUPÁ*\n\n🥉 *PLANO BÁSICO - R$ 89,90/mês*\n• Musculação completa\n• 1 modalidade à escolha\n• Horário livre\n\n🥈 *PLANO PREMIUM - R$ 129,90/mês*\n• Tudo do Básico +\n• Todas as modalidades\n• Acompanhamento nutricional\n• App exclusivo\n\n🥇 *PLANO VIP - R$ 179,90/mês*\n• Tudo do Premium +\n• Personal trainer 2x/semana\n• Avaliações mensais\n• Prioridade nas aulas\n\n💎 *PLANO FAMÍLIA - R$ 299,90/mês*\n• Até 4 pessoas\n• Todos os benefícios VIP\n• Desconto em produtos\n\n📱 Para fechar hoje: *matricula*`;\n\n  } else if (texto.includes('matricula') || texto.includes('matrícula') || texto.includes('sim') || texto.includes('interessado') || texto.includes('quero')) {\n    categoria = 'matricula';\n    resposta = `🎉 *ÓTIMO ${contactName.toUpperCase()}! VAMOS COMEÇAR!*\n\n📝 *Para sua matrícula precisamos:*\n• RG e CPF\n• Comprovante de endereço\n• Atestado médico (ou fazemos aqui)\n\n🎁 *OFERTA ESPECIAL HOJE:*\n• Taxa de matrícula GRÁTIS (R$ 50,00)\n• 1ª semana experimental\n• Avaliação física completa\n• Kit welcome (squeeze + toalha)\n\n📞 *Próximo passo:*\nNossa consultora vai te chamar para:\n• Agendar sua visita\n• Conhecer a academia\n• Fazer sua avaliação\n• Finalizar matrícula\n\n⏰ Qual o melhor horário para te ligar?\n• Manhã (8h-12h)\n• Tarde (14h-18h)\n• Noite (18h-20h)\n\nDigite o período preferido! 📱`;\n\n  } else if (texto.includes('parar') || texto.includes('stop') || texto.includes('sair')) {\n    categoria = 'parar';\n    resposta = `👋 *MENSAGENS PAUSADAS*\n\nObrigado pelo interesse na Academia Matupá, ${contactName}! 🏋️\n\n📱 Para reativar, envie qualquer mensagem\n💪 Estaremos sempre aqui quando precisar!\n\n*Que tal dar uma chance para sua saúde?*\nA primeira semana é GRÁTIS! 🎁`;\n\n  } else {\n    categoria = 'boas-vindas';\n    resposta = `👋 *Olá ${contactName}! Bem-vindo à Academia Matupá!* 🏋️\n\n💪 Somos a academia mais completa de Matupá!\n📈 457 membros satisfeitos e você pode ser o próximo!\n\n📋 *Digite uma das opções:*\n• *menu* → Ver todas as opções\n• *info* → Conhecer a academia\n• *precos* → Ver planos\n• *matricula* → Quero me matricular\n\n🎁 *OFERTA ESPECIAL:*\n1ª semana GRÁTIS + avaliação!\n\nComo posso ajudar você hoje? 😊`;\n  }\n\n  // Retornar dados para envio\n  return {\n    json: {\n      to: from,\n      message: resposta,\n      phoneNumberId: phoneNumberId,\n      categoria: categoria,\n      contactName: contactName,\n      originalMessage: messageText,\n      timestamp: new Date().toISOString(),\n      messageId: messageId\n    }\n  };\n}\n\n// Se não for mensagem de texto, pular\nreturn {\n  json: {\n    skip: true,\n    reason: `Tipo de mensagem não suportado: ${messageType}`,\n    from: from,\n    contactName: contactName\n  }\n};"
+      },
+      "id": "processar-mensagem-academia",
+      "name": "Processar Mensagem Academia",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "verificar-skip-academia",
+      "name": "Verificar Skip",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "={{ $json.phoneNumberId }}",
+        "recipientPhoneNumber": "={{ $json.to }}",
+        "messageType": "text",
+        "text": "={{ $json.message }}"
+      },
+      "id": "enviar-whatsapp-academia",
+      "name": "Enviar WhatsApp Academia",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Log da resposta enviada - Academia Matupá\nconst input = $input.all()[0].json;\n\nconsole.log('='.repeat(50));\nconsole.log('✅ RESPOSTA ENVIADA - ACADEMIA MATUPÁ');\nconsole.log('='.repeat(50));\nconsole.log('👤 Para:', input.contactName);\nconsole.log('📱 Número:', input.to);\nconsole.log('📝 Categoria:', input.categoria);\nconsole.log('💬 Mensagem original:', input.originalMessage);\nconsole.log('📤 Resposta enviada:', input.message.substring(0, 100) + '...');\nconsole.log('⏰ Timestamp:', input.timestamp);\nconsole.log('🆔 Message ID:', input.messageId);\nconsole.log('='.repeat(50));\n\n// Estatísticas simples\nconst stats = {\n  timestamp: input.timestamp,\n  categoria: input.categoria,\n  contactName: input.contactName,\n  phoneNumber: input.to,\n  messageLength: input.message.length,\n  originalMessage: input.originalMessage\n};\n\nreturn {\n  json: {\n    status: 'success',\n    message: 'Resposta enviada com sucesso',\n    stats: stats,\n    sentTo: input.to,\n    contactName: input.contactName,\n    categoria: input.categoria,\n    timestamp: input.timestamp\n  }\n};"
+      },
+      "id": "log-resposta-academia",
+      "name": "Log Resposta Academia",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1000, 200]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "responseBody": "{\n  \"status\": \"success\",\n  \"message\": \"Mensagem processada pela Academia Matupá\",\n  \"timestamp\": \"{{ new Date().toISOString() }}\",\n  \"webhook\": \"whatsapp-academia-teste\"\n}",
+        "responseContentType": "application/json",
+        "responseCode": 200
+      },
+      "id": "resposta-webhook-academia",
+      "name": "Resposta Webhook Academia",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [800, 400]
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook Academia": {
+      "main": [
+        [
+          {
+            "node": "Processar Mensagem Academia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Mensagem Academia": {
+      "main": [
+        [
+          {
+            "node": "Verificar Skip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Skip": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook Academia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enviar WhatsApp Academia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp Academia": {
+      "main": [
+        [
+          {
+            "node": "Log Resposta Academia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Resposta Academia": {
+      "main": [
+        [
+          {
+            "node": "Resposta Webhook Academia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "timezone": "America/Sao_Paulo",
+    "errorWorkflow": "",
+    "executionTimeout": -1
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-09-17T22:00:00.000Z",
+      "updatedAt": "2025-09-17T22:00:00.000Z",
+      "id": "1",
+      "name": "Academia"
+    },
+    {
+      "createdAt": "2025-09-17T22:00:00.000Z",
+      "updatedAt": "2025-09-17T22:00:00.000Z",
+      "id": "2",
+      "name": "WhatsApp"
+    },
+    {
+      "createdAt": "2025-09-17T22:00:00.000Z",
+      "updatedAt": "2025-09-17T22:00:00.000Z",
+      "id": "3",
+      "name": "Teste"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-17T22:00:00.000Z",
+  "versionId": "1"
+}

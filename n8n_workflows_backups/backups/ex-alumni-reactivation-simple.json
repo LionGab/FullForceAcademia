@@ -1,0 +1,289 @@
+{
+  "name": "Ex-Alumni Reactivation - SISTEMA ÚNICO",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "⚡ Iniciar Campanha",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [100, 200]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": "{{ $env.CSV_FILE_PATH || './data/ex-alunos-teste.csv' }}",
+        "options": {
+          "destination": "data"
+        }
+      },
+      "id": "read-csv",
+      "name": "📊 Ler Dados Ex-Alunos",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [300, 200]
+    },
+    {
+      "parameters": {
+        "options": {
+          "delimiter": ",",
+          "enableBOM": true
+        }
+      },
+      "id": "csv-parser",
+      "name": "🔄 Processar CSV",
+      "type": "n8n-nodes-base.csvToJson",
+      "typeVersion": 1,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "operation": "isNotEmpty"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.name }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "leftValue": "={{ $json.phone }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "leftValue": "={{ $json.status }}",
+              "operation": "equal",
+              "rightValue": "INATIVO"
+            }
+          ],
+          "combineOperation": "all"
+        }
+      },
+      "id": "filter-valid",
+      "name": "✅ Filtrar Ex-Alunos Válidos",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1,
+      "position": [700, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Segmentar ex-alunos por tempo de inatividade\nconst items = [];\n\nfor (const item of $input.all()) {\n  const data = item.json;\n  const lastContact = new Date(data.last_contact || data.end_date);\n  const now = new Date();\n  const daysSince = Math.floor((now - lastContact) / (1000 * 60 * 60 * 24));\n  \n  // Segmentação\n  let segment = 'FRIO';      // Padrão: Lead frio\n  let priority = 3;\n  \n  if (daysSince <= 30) {\n    segment = 'QUENTE';      // Contato recente\n    priority = 1;\n  } else if (daysSince <= 90) {\n    segment = 'MORNO';       // Contato médio\n    priority = 2;\n  }\n  \n  // Preparar dados para WhatsApp\n  const processedData = {\n    name: data.name,\n    phone: data.phone.replace(/\\D/g, ''),  // Limpar telefone\n    email: data.email,\n    segment: segment,\n    priority: priority,\n    daysSince: daysSince,\n    lastValue: data.monthly_value || 150,\n    membershipType: data.membership_type || 'Mensal'\n  };\n  \n  items.push({\n    json: processedData\n  });\n}\n\n// Ordenar por prioridade (QUENTE primeiro)\nitems.sort((a, b) => a.json.priority - b.json.priority);\n\nreturn items;"
+      },
+      "id": "segment-students",
+      "name": "🎯 Segmentar Ex-Alunos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "batchSize": 20,
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "rate-limit",
+      "name": "⏱️ Rate Limit (20/batch)",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Preparar mensagem personalizada\nconst data = $json;\nconst firstName = data.name.split(' ')[0];\nconst templates = {\n  'QUENTE': `Oi ${firstName}! 👋\\n\\nNotamos que você parou de treinar na Full Force recentemente. Como você está?\\n\\nQue tal voltar com uma condição especial? Temos novidades incríveis esperando por você! 💪\\n\\n*Responda SIM se tiver interesse*`,\n  \n  'MORNO': `Olá ${firstName}! ✨\\n\\nSentimos sua falta aqui na Full Force! Como estão as coisas?\\n\\nTemos uma oportunidade especial para ex-alunos como você retornarem com desconto exclusivo! 🏋️‍♂️\\n\\n*Digite QUERO para saber mais*`,\n  \n  'FRIO': `E aí ${firstName}! 🌟\\n\\nVocê já foi da família Full Force e sabemos do seu potencial!\\n\\nEstamos com uma SUPER PROMOÇÃO para ex-alunos. Que tal dar uma segunda chance para seus objetivos? 🎯\\n\\n*Responda INTERESSE para detalhes*`\n};\n\nconst message = templates[data.segment] || templates['FRIO'];\n\nreturn {\n  json: {\n    ...data,\n    message: message,\n    whatsappData: {\n      number: `55${data.phone}@c.us`,\n      message: message\n    }\n  }\n};"
+      },
+      "id": "prepare-message",
+      "name": "💬 Preparar Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1300, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/send-message",
+        "options": {
+          "bodyContentType": "json",
+          "timeout": 10000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.whatsappData }}"
+      },
+      "id": "send-whatsapp",
+      "name": "📱 Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result-summary",
+              "name": "result",
+              "value": "=Mensagem enviada para {{ $json.name }} ({{ $json.segment }})",
+              "type": "string"
+            },
+            {
+              "id": "phone-log",
+              "name": "phone",
+              "value": "={{ $json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp-log",
+              "name": "timestamp",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "segment-log",
+              "name": "segment",
+              "value": "={{ $json.segment }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-result",
+      "name": "📝 Log Envio",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1700, 200]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "delay-between",
+      "name": "⏳ Delay 3s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1500, 350]
+    }
+  ],
+  "connections": {
+    "manual-trigger": {
+      "main": [
+        [
+          {
+            "node": "read-csv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "read-csv": {
+      "main": [
+        [
+          {
+            "node": "csv-parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "csv-parser": {
+      "main": [
+        [
+          {
+            "node": "filter-valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter-valid": {
+      "main": [
+        [
+          {
+            "node": "segment-students",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "segment-students": {
+      "main": [
+        [
+          {
+            "node": "rate-limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "rate-limit": {
+      "main": [
+        [
+          {
+            "node": "prepare-message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-message": {
+      "main": [
+        [
+          {
+            "node": "send-whatsapp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-whatsapp": {
+      "main": [
+        [
+          {
+            "node": "log-result",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "delay-between",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "delay-between": {
+      "main": [
+        [
+          {
+            "node": "rate-limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": ["whatsapp", "reactivation", "academia"],
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "ex-alumni-reactivation-simple",
+  "versionId": "1"
+}

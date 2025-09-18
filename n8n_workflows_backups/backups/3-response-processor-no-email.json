@@ -1,0 +1,143 @@
+{
+  "name": "3 - Response Processor (Sem Email) - Full Force Academia",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "whatsapp-response",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "id": "webhook-trigger-505",
+      "name": "WhatsApp Response Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 300],
+      "webhookId": "full-force-whatsapp-response"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Processar resposta do WhatsApp - Full Force Academia\nconst resposta = ($json.message || '').toLowerCase();\nconst telefone = $json.from || '';\nconst nome = $json.nome || 'Aluno';\n\n// Analisar intenção da resposta\nlet interessado = false;\nlet categoria_resposta = 'NEUTRO';\nlet proxima_acao = 'AGUARDAR';\n\n// Respostas positivas\nif (resposta.includes('sim') || resposta.includes('quero') || resposta.includes('interessado') || resposta.includes('vamos') || resposta.includes('aceito')) {\n  interessado = true;\n  categoria_resposta = 'INTERESSADO';\n  proxima_acao = 'CONTATAR_VENDAS';\n}\n\n// Respostas negativas\nelse if (resposta.includes('não') || resposta.includes('nao') || resposta.includes('desinteressado') || resposta.includes('pare') || resposta.includes('remover')) {\n  interessado = false;\n  categoria_resposta = 'RECUSOU';\n  proxima_acao = 'REMOVER_LISTA';\n}\n\n// Dúvidas/perguntas\nelse if (resposta.includes('?') || resposta.includes('como') || resposta.includes('quanto') || resposta.includes('horário') || resposta.includes('valor')) {\n  interessado = true;\n  categoria_resposta = 'DUVIDAS';\n  proxima_acao = 'RESPONDER_DUVIDAS';\n}\n\nconst resultado = {\n  telefone: telefone,\n  nome: nome,\n  resposta_original: $json.message || '',\n  interessado: interessado,\n  categoria_resposta: categoria_resposta,\n  proxima_acao: proxima_acao,\n  data_resposta: new Date().toISOString(),\n  academia: 'Full Force Academia',\n  cidade: 'Matupá-MT'\n};\n\nconsole.log('📱 [WHATSAPP RESPONSE] Processando:', nome, telefone);\nconsole.log('💬 [RESPOSTA]:', resposta);\nconsole.log('🎯 [CATEGORIA]:', categoria_resposta);\nconsole.log('⚡ [AÇÃO]:', proxima_acao);\n\nreturn resultado;"
+      },
+      "id": "analyze-response-606",
+      "name": "Analyze Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "is-interested",
+              "leftValue": "={{ $json.categoria_resposta }}",
+              "rightValue": "INTERESSADO",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "hot-lead-check",
+      "name": "Hot Lead Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "alert_message",
+              "name": "alertMessage",
+              "value": "🔥 HOT LEAD IDENTIFICADO! Nome: {{ $json.nome }} | Telefone: {{ $json.telefone }} | Resposta: {{ $json.resposta_original }}",
+              "type": "string"
+            },
+            {
+              "id": "lead_priority",
+              "name": "leadPriority",
+              "value": "URGENTE",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "create-alert",
+      "name": "Create Hot Lead Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [800, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"success\", \"message\": \"Response processed successfully\", \"categoria\": \"{{ $json.categoria_resposta }}\", \"academia\": \"Full Force Academia\", \"sistema\": \"N8N Automation\" }",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [800, 400]
+    }
+  ],
+  "connections": {
+    "WhatsApp Response Webhook": {
+      "main": [
+        [
+          {
+            "node": "Analyze Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Response": {
+      "main": [
+        [
+          {
+            "node": "Hot Lead Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hot Lead Check": {
+      "main": [
+        [
+          {
+            "node": "Create Hot Lead Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "timezone": "America/Sao_Paulo"
+  }
+}

@@ -1,0 +1,354 @@
+{
+  "name": "Ex-Alumni Reactivation Campaign",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Daily Alumni Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "readOrSearch",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "16ftXuNF2ssAG74dPcsZaCJD4TxfYEjd-bnrRjk7l68I"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Sheet1"
+        },
+        "range": "A1:J1000",
+        "options": {
+          "valueInputOption": "RAW"
+        }
+      },
+      "credentials": {
+        "googleSheetsServiceAccountApi": "Academia Google Sheets Service Account"
+      },
+      "id": "read-alumni-data",
+      "name": "Read Alumni from Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "INATIVO",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              }
+            },
+            {
+              "leftValue": "={{ $json.last_contact }}",
+              "rightValue": "{{ $now.minus({ days: 30 }).toFormat('yyyy-MM-dd') }}",
+              "operator": {
+                "operation": "before",
+                "type": "dateTime"
+              }
+            }
+          ]
+        }
+      },
+      "id": "filter-inactive-alumni",
+      "name": "Filter Ex-Alumni",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javascript",
+        "jsCode": "const items = $input.all();\nconst categorizedItems = [];\n\nfor (const item of items) {\n  const lastContact = new Date(item.json.last_contact);\n  const daysSinceContact = Math.floor((new Date() - lastContact) / (1000 * 60 * 60 * 24));\n  \n  let category = 'FRIO';\n  let priority = 3;\n  \n  if (daysSinceContact <= 30) {\n    category = 'QUENTE';\n    priority = 1;\n  } else if (daysSinceContact <= 90) {\n    category = 'MORNO'; \n    priority = 2;\n  }\n  \n  categorizedItems.push({\n    json: {\n      ...item.json,\n      category,\n      priority,\n      days_since_contact: daysSinceContact\n    }\n  });\n}\n\nreturn categorizedItems;"
+      },
+      "id": "categorize-alumni",
+      "name": "Categorize by Inactivity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "schema": "public",
+        "table": "ex_alumni_campaigns",
+        "columns": "name,phone,email,category,priority,last_contact,days_since_contact,campaign_status",
+        "options": {
+          "mode": "upsert",
+          "upsertColumns": "phone"
+        }
+      },
+      "id": "store-in-postgres",
+      "name": "Store Alumni Data",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javascript",
+        "jsCode": "const items = $input.all();\nconst messages = [];\n\nconst messageTemplates = {\n  QUENTE: `Oi NAME_PLACEHOLDER! 👋 Sentimos sua falta na Full Force Academia! Como você está? \n\nVi que faz pouco tempo que você parou de treinar... Que tal voltar com uma condição especial só pra você? 💪\n\nTemos novidades incríveis esperando! Posso te contar mais?`,\n  \n  MORNO: `NAME_PLACEHOLDER, tudo bem? 😊 Aqui é da Full Force Academia em Matupá!\n\nJá faz um tempinho que você não aparece por aqui... Que tal dar uma passadinha pra conhecer nossa nova estrutura?\n\n🏋️‍♂️ Temos horários flexíveis e planos que cabem no seu bolso!\n\nPosso te enviar nossa tabela atualizada?`,\n  \n  FRIO: `Olá NAME_PLACEHOLDER! 👋 Esperamos que você esteja bem!\n\nA Full Force Academia em Matupá tem novidades imperdíveis! 🎉\n\n✅ Equipamentos novos\n✅ Modalidades diferentes  \n✅ Horários estendidos\n✅ Promoções especiais para ex-alunos\n\nQue tal conhecer? Tenho certeza que você vai gostar! 💪`\n};\n\nfor (const item of items) {\n  const template = messageTemplates[item.json.category];\n  const firstName = item.json.name ? item.json.name.split(' ')[0] : 'Amigo(a)';\n  const personalizedMessage = template.replace(/NAME_PLACEHOLDER/g, firstName);\n  \n  messages.push({\n    json: {\n      ...item.json,\n      whatsapp_message: personalizedMessage,\n      phone_number: item.json.phone ? item.json.phone.replace(/\\D/g, '') : '',\n      scheduled_time: new Date(Date.now() + Math.random() * 3600000).toISOString()\n    }\n  });\n}\n\nreturn messages;"
+      },
+      "id": "prepare-whatsapp-message",
+      "name": "Prepare WhatsApp Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $itemIndex }}",
+              "rightValue": 19,
+              "operator": {
+                "operation": "smaller",
+                "type": "number"
+              }
+            }
+          ]
+        }
+      },
+      "id": "rate-limiter",
+      "name": "Rate Limiter (20/day)",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendMessage",
+        "recipientPhoneNumber": "={{ $json.phone_number }}",
+        "message": "={{ $json.whatsapp_message }}",
+        "options": {}
+      },
+      "id": "send-whatsapp",
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "ex_alumni_campaigns",
+        "updateKey": "phone",
+        "columns": "campaign_status,message_sent_at",
+        "additionalFields": {
+          "where": {
+            "conditions": [
+              {
+                "column": "phone",
+                "condition": "equal",
+                "value": "={{ $json.phone }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "update-campaign-status",
+      "name": "Update Campaign Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javascript",
+        "jsCode": "const items = $input.all();\nconst summary = {\n  total_processed: items.length,\n  messages_sent: items.filter(item => item.json.campaign_status === 'SENT').length,\n  timestamp: new Date().toISOString(),\n  campaign_name: 'Ex-Alumni Reactivation'\n};\n\nconsole.log('Campaign Summary:', summary);\nreturn [{ json: summary }];"
+      },
+      "id": "log-results",
+      "name": "Log Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Daily Alumni Check": {
+      "main": [
+        [
+          {
+            "node": "Read Alumni from Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Alumni from Sheets": {
+      "main": [
+        [
+          {
+            "node": "Filter Ex-Alumni",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Ex-Alumni": {
+      "main": [
+        [
+          {
+            "node": "Categorize by Inactivity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Categorize by Inactivity": {
+      "main": [
+        [
+          {
+            "node": "Store Alumni Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Alumni Data": {
+      "main": [
+        [
+          {
+            "node": "Prepare WhatsApp Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare WhatsApp Messages": {
+      "main": [
+        [
+          {
+            "node": "Rate Limiter (20/day)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limiter (20/day)": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Update Campaign Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Campaign Status": {
+      "main": [
+        [
+          {
+            "node": "Log Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "timezone": "America/Sao_Paulo"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-09-13T21:58:30.000Z",
+      "updatedAt": "2025-09-13T21:58:30.000Z",
+      "id": "1",
+      "name": "academia"
+    },
+    {
+      "createdAt": "2025-09-13T21:58:30.000Z",
+      "updatedAt": "2025-09-13T21:58:30.000Z",
+      "id": "2",
+      "name": "whatsapp"
+    },
+    {
+      "createdAt": "2025-09-13T21:58:30.000Z",
+      "updatedAt": "2025-09-13T21:58:30.000Z",
+      "id": "3",
+      "name": "ex-alunos"
+    }
+  ],
+  "triggerCount": 1,
+  "meta": {
+    "instanceId": "academia-whatsapp-automation"
+  }
+}

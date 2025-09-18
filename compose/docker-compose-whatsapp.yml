@@ -1,0 +1,28 @@
+services:
+  whatsapp-api:
+    image: node:18-alpine
+    container_name: whatsapp_simple_academia
+    restart: always
+    ports:
+      - "3001:3000"
+    working_dir: /app
+    volumes:
+      - ./whatsapp-simple:/app
+      - whatsapp_sessions:/app/sessions
+    command: >
+      sh -c "
+        npm install whatsapp-web.js express cors qrcode-terminal &&
+        node server.js
+      "
+    environment:
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/webhook/whatsapp-response
+    networks:
+      - whatsapp_network
+
+volumes:
+  whatsapp_sessions:
+
+networks:
+  whatsapp_network:
+    driver: bridge
