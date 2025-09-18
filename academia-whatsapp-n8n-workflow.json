@@ -1,0 +1,276 @@
+{
+  "name": "Academia Full Force - WhatsApp Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-message",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "whatsapp-academia"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse incoming WhatsApp message\nconst body = $input.first().json.body || $input.first().json;\nconst from = body.from || $input.first().json.from;\nconst messageText = (body.text || body.message || '').toLowerCase().trim();\nconst contactName = body.contacts?.[0]?.profile?.name || body.name || 'Cliente';\nconst contactPhone = from.replace('@c.us', '').replace('+', '');\n\n// Intent recognition patterns\nconst patterns = {\n  greeting: /^(oi|olá|ola|bom dia|boa tarde|boa noite|hey|hello)/i,\n  scheduleClass: /(agendar|marcar|reservar).*(aula|treino|horário|horario)/i,\n  cancelClass: /(cancelar|desmarcar).*(aula|treino|agendamento)/i,\n  plans: /(plano|planos|mensalidade|valor|preço|preco)/i,\n  location: /(endereço|endereco|localização|localizacao|onde fica)/i,\n  hours: /(horário|horario).*(funcionamento|academia|aberto)/i,\n  help: /(ajuda|help|menu|opções|opcoes)/i,\n  contact: /(contato|telefone|whatsapp|falar)/i\n};\n\n// Determine intent\nlet intent = 'unknown';\nfor (const [key, pattern] of Object.entries(patterns)) {\n  if (pattern.test(messageText)) {\n    intent = key;\n    break;\n  }\n}\n\n// Check for numbered menu options\nif (/^[1-8]$/.test(messageText)) {\n  const menuMap = {\n    '1': 'scheduleClass',\n    '2': 'cancelClass', \n    '3': 'classSchedule',\n    '4': 'plans',\n    '5': 'location',\n    '6': 'hours',\n    '7': 'evaluation',\n    '8': 'contact'\n  };\n  intent = menuMap[messageText] || 'unknown';\n}\n\nconst timestamp = new Date().toISOString();\nconst dateTime = new Date().toLocaleString('pt-BR');\n\nreturn {\n  json: {\n    originalMessage: body,\n    messageText,\n    contactName,\n    contactPhone,\n    from,\n    intent,\n    timestamp,\n    dateTime\n  }\n};"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "Parse WhatsApp Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "1BvQhCgZJqL9T3XrM4NfP8QwHk6yS9cA2vD5eE8fF0gG",
+        "sheetName": "Contatos",
+        "range": "A:E",
+        "options": {
+          "locationDefineOption": "specifyLocationRange",
+          "headerRow": 1
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Nome": "={{ $json.contactName }}",
+            "Telefone": "={{ $json.contactPhone }}",
+            "Data Contato": "={{ $json.dateTime }}",
+            "Status": "Novo contato",
+            "Observações": "WhatsApp - {{ $json.intent }}"
+          }
+        }
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "Save Contact to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [680, 200]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.intent }}",
+        "rules": {
+          "rules": [
+            {
+              "operation": "equal",
+              "value2": "greeting"
+            },
+            {
+              "operation": "equal",
+              "value2": "help"
+            },
+            {
+              "operation": "equal",
+              "value2": "scheduleClass"
+            },
+            {
+              "operation": "equal",
+              "value2": "plans"
+            },
+            {
+              "operation": "equal",
+              "value2": "location"
+            },
+            {
+              "operation": "equal",
+              "value2": "hours"
+            },
+            {
+              "operation": "equal",
+              "value2": "contact"
+            }
+          ]
+        }
+      },
+      "id": "d4e5f6g7-h8i9-0123-defg-456789012345",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate appropriate response based on intent\nconst intent = $json.intent;\nconst contactName = $json.contactName;\n\nconst responses = {\n  greeting: `🔥 Olá ${contactName}! Bem-vindo à *Academia Full Force*!\\n\\nSou seu assistente virtual e estou aqui para ajudá-lo com:\\n\\n📅 *Agendamentos* - Marcar/cancelar aulas\\n📋 *Informações* - Planos, horários, endereço\\n💪 *Avaliação Física* - Agendar sua avaliação\\n📞 *Contato* - Falar com nossa equipe\\n\\n*Como posso ajudá-lo hoje?*\\n\\n_Digite \"menu\" para ver todas as opções._`,\n  \n  help: `📋 *MENU PRINCIPAL*\\n\\nEscolha uma opção:\\n\\n1️⃣ *Agendar Aula/Treino*\\n2️⃣ *Cancelar Agendamento*\\n3️⃣ *Ver Horários Disponíveis*\\n4️⃣ *Planos e Valores*\\n5️⃣ *Endereço e Localização*\\n6️⃣ *Horário de Funcionamento*\\n7️⃣ *Avaliação Física*\\n8️⃣ *Falar com Atendente*\\n\\n*Digite o número da opção desejada ou descreva o que precisa.*`,\n  \n  scheduleClass: `📅 *Agendamento de Aulas*\\n\\nPara agendar sua aula, preciso de algumas informações:\\n\\n🗓️ *Qual data você prefere?*\\n⏰ *Que horário funciona melhor?*\\n💪 *Que tipo de treino deseja?*\\n\\nNossos horários disponíveis:\\n• Segunda a Sexta: 6h às 22h\\n• Sábado: 8h às 18h\\n• Domingo: 8h às 14h\\n\\n_Nossa equipe entrará em contato em breve para confirmar!_`,\n  \n  plans: `💳 *PLANOS E VALORES*\\n\\n1️⃣ *Plano Básico*\\n💰 R$ 89,90/mês\\n📋 Musculação + Cardio\\n\\n2️⃣ *Plano Completo*\\n💰 R$ 129,90/mês\\n📋 Todas as modalidades\\n\\n3️⃣ *Plano Premium*\\n💰 R$ 179,90/mês\\n📋 Tudo + Personal Trainer\\n\\n🎯 *Promoções ativas* - Consulte nossa equipe!\\n📞 *Contato:* +5511999999999\\n\\n_Digite 'menu' para outras opções._`,\n  \n  location: `📍 *LOCALIZAÇÃO*\\n\\n**Academia Full Force**\\n📌 Rua das Academias, 123 - São Paulo, SP\\n\\n🚗 *Como chegar:*\\n• Próximo ao metrô/estação\\n• Estacionamento gratuito disponível\\n• Acesso fácil por transporte público\\n\\n📞 *Contato:* +5511999999999\\n\\n_Nos vemos em breve! 💪_`,\n  \n  hours: `⏰ *HORÁRIO DE FUNCIONAMENTO*\\n\\nSegunda a Sexta: 6h às 22h\\nSábado: 8h às 18h\\nDomingo: 8h às 14h\\n\\n🔥 *Academia Full Force* - Sua transformação não para!\\n\\n_Precisa de mais alguma coisa?_`,\n  \n  contact: `📞 *Transferindo para Atendimento Humano*\\n\\nNossa equipe será notificada e entrará em contato em breve!\\n\\n⏰ *Tempo médio de resposta:* 5-10 minutos\\n💬 *Horário:* Segunda a Sexta: 6h às 22h\\n\\n📲 *Contato direto:* +5511999999999\\n\\n🔥 *Academia Full Force* - Atendimento que faz a diferença!`,\n  \n  unknown: `🤔 Não entendi sua solicitação. Digite 'menu' para ver as opções disponíveis.\\n\\nOu descreva o que você precisa que nossa equipe entrará em contato!`\n};\n\nconst response = responses[intent] || responses.unknown;\n\nreturn {\n  json: {\n    response,\n    contactPhone: $json.contactPhone,\n    intent,\n    timestamp: $json.timestamp\n  }\n};"
+      },
+      "id": "e5f6g7h8-i9j0-1234-efgh-567890123456",
+      "name": "Generate Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3000/send-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"chatId\": \"{{ $json.contactPhone }}@c.us\",\n  \"text\": \"{{ $json.response }}\",\n  \"session\": \"default\"\n}",
+        "options": {}
+      },
+      "id": "f6g7h8i9-j0k1-2345-fghi-678901234567",
+      "name": "Send WhatsApp Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"message\": \"Message processed\",\n  \"intent\": \"{{ $('Generate Response').item.json.intent }}\",\n  \"timestamp\": \"{{ $('Generate Response').item.json.timestamp }}\"\n}"
+      },
+      "id": "g7h8i9j0-k1l2-3456-ghij-789012345678",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Save Contact to Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Generate Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Response": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Response": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "1",
+  "triggerCount": 1,
+  "tags": [
+    {
+      "id": "academia",
+      "name": "Academia"
+    },
+    {
+      "id": "whatsapp",
+      "name": "WhatsApp"
+    },
+    {
+      "id": "automation",
+      "name": "Automation"
+    }
+  ]
+}

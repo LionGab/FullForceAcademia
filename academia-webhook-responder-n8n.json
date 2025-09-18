@@ -1,0 +1,343 @@
+{
+  "name": "💬 Academia Full Force - Resposta Automática WAHA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "academia-whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-waha",
+      "name": "📱 WAHA Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parser otimizado para WAHA API\nconst payload = $input.first().json;\n\n// Estrutura típica WAHA\nconst event = payload.event || 'message';\nconst sessionId = payload.session || 'default';\nconst messageData = payload.payload || payload;\n\n// Extrair dados da mensagem\nconst chatId = messageData.from || messageData.chatId;\nconst messageBody = messageData.body || messageData.text || '';\nconst messageText = messageBody.toLowerCase().trim();\nconst contactName = messageData.notifyName || messageData.pushName || 'Cliente';\nconst contactPhone = chatId.replace('@c.us', '').replace('+55', '');\n\n// Verificar se é mensagem válida\nif (!chatId || !messageText || messageData.fromMe) {\n  return { json: { skip: true, reason: 'Mensagem inválida ou própria' } };\n}\n\n// DETECTOR DE INTERESSE (palavras-chave de conversão)\nconst interesseKeywords = {\n  alta_intencao: ['sim', 'quero', 'aceito', 'top', 'vamos', 'quando', 'hoje', 'agora', 'agendar', 'marcar'],\n  duvidas: ['quanto', 'valor', 'preço', 'preco', 'custa', 'plano', 'horario', 'horário', 'funciona'],\n  objecoes: ['caro', 'não', 'nao', 'depois', 'mais tarde', 'pensando', 'talvez'],\n  urgente: ['emergencia', 'urgente', 'preciso', 'ajuda']\n};\n\n// Classificar intenção\nlet intencao = 'neutro';\nlet prioridade = 'baixa';\n\nfor (const [tipo, palavras] of Object.entries(interesseKeywords)) {\n  if (palavras.some(palavra => messageText.includes(palavra))) {\n    intencao = tipo;\n    prioridade = tipo === 'alta_intencao' ? 'critica' : \n                 tipo === 'duvidas' ? 'alta' : \n                 tipo === 'urgente' ? 'critica' : 'media';\n    break;\n  }\n}\n\n// Detectar hora do dia para personalização\nconst agora = new Date();\nconst hora = agora.getHours();\nconst cumprimento = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';\n\nreturn {\n  json: {\n    chatId,\n    contactName,\n    contactPhone,\n    messageText,\n    messageOriginal: messageBody,\n    intencao,\n    prioridade,\n    cumprimento,\n    timestamp: agora.toISOString(),\n    sessionId\n  }\n};"
+      },
+      "id": "parse-waha",
+      "name": "🔍 Parse WAHA Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "skip-check",
+              "leftValue": "={{ $json.skip }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-valid",
+      "name": "✅ Filtro Mensagens",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": "1BvQhCgZJqL9T3XrM4NfP8QwHk6yS9cA2vD5eE8fF0gG",
+        "sheetName": "Conversas",
+        "range": "A:H",
+        "keyRowIndex": 2,
+        "options": {
+          "headerRow": 1
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Telefone": "={{ $json.contactPhone }}",
+            "Nome": "={{ $json.contactName }}",
+            "Mensagem": "={{ $json.messageOriginal }}",
+            "Intencao": "={{ $json.intencao }}",
+            "Prioridade": "={{ $json.prioridade }}",
+            "Data_Hora": "={{ $now.format('DD/MM/YYYY HH:mm') }}",
+            "Status": "Recebida",
+            "Observacoes": "Auto processada"
+          }
+        }
+      },
+      "id": "save-conversation",
+      "name": "💾 Salvar Conversa",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.prioridade }}",
+        "rules": {
+          "rules": [
+            {
+              "operation": "equal",
+              "value2": "critica"
+            },
+            {
+              "operation": "equal",
+              "value2": "alta"
+            },
+            {
+              "operation": "equal",
+              "value2": "media"
+            }
+          ]
+        }
+      },
+      "id": "route-priority",
+      "name": "🎯 Router Prioridade",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// RESPOSTA CRÍTICA - ALTA CONVERSÃO\nconst dados = $json;\n\nconst respostasCriticas = {\n  'sim': `🔥 *PERFEITO ${dados.contactName}!*\\n\\n✅ Sua vaga está GARANTIDA!\\n\\n📍 *Academia Full Force*\\nRua das Academias, 123\\n\\n⏰ *Horários:*\\n• Segunda a Sexta: 6h às 22h\\n• Sábado: 8h às 18h\\n\\n🎁 *BÔNUS ESPECIAL:*\\n• Avaliação física GRÁTIS\\n• 1ª semana de Personal inclusa\\n\\n📞 *Confirme agora:* (11) 99999-9999\\n\\n💪 Nos vemos hoje mesmo!`,\n  \n  'quero': `🚀 *EXCELENTE ${dados.contactName}!*\\n\\n🎯 Você tomou a MELHOR decisão!\\n\\n💰 *Oferta confirmada:*\\n• R$ 49,90 primeiro mês\\n• Sem taxa de matrícula\\n• Cancele quando quiser\\n\\n📱 *PRÓXIMO PASSO:*\\nVenha hoje mesmo com:\\n• RG e CPF\\n• Atestado médico (se tiver)\\n\\n🔥 *Vamos começar SUA transformação!*\\n\\n📞 Dúvidas: (11) 99999-9999`,\n  \n  'aceito': `🎉 *FANTÁSTICO ${dados.contactName}!*\\n\\n✨ Bem-vindo à família Full Force!\\n\\n🎁 *Seus benefícios:*\\n• Acesso total aos equipamentos\\n• Aulas coletivas inclusas\\n• App de treinos personalizado\\n• Suporte nutricional\\n\\n📍 *Nos encontre:*\\nRua das Academias, 123\\nSão Paulo - SP\\n\\n⚡ *Venha hoje e ganhe kit welcome!*\\n\\n📞 WhatsApp: (11) 99999-9999`,\n  \n  'default': `🔥 *${dados.cumprimento} ${dados.contactName}!*\\n\\n💪 Vi que você tem INTERESSE REAL!\\n\\n🎯 *OFERTA ESPECIAL HOJE:*\\n💰 Primeira mensalidade R$ 49,90\\n🎁 Avaliação física GRATUITA\\n⏰ Válido só até 23:59h\\n\\n✅ *BENEFÍCIOS INCLUSOS:*\\n• Musculação completa\\n• Cardio de última geração\\n• Aulas coletivas\\n• App personalizado\\n\\n📞 *Responda SIM e garante já!*\\n\\n🏃‍♂️ Vagas limitadas!`\n};\n\n// Escolher resposta baseada na mensagem\nlet resposta = respostasCriticas.default;\nfor (const [key, value] of Object.entries(respostasCriticas)) {\n  if (key !== 'default' && dados.messageText.includes(key)) {\n    resposta = value;\n    break;\n  }\n}\n\nreturn {\n  json: {\n    chatId: dados.chatId,\n    resposta: resposta,\n    prioridade: 'critica',\n    followUpDelay: '2 hours' // Follow-up em 2 horas se não responder\n  }\n};"
+      },
+      "id": "response-critical",
+      "name": "🚨 RESPOSTA CRÍTICA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "// RESPOSTA ALTA PRIORIDADE - INFORMAÇÕES\nconst dados = $json;\n\nconst respostasAltas = {\n  'quanto': `💰 *VALORES ESPECIAIS ${dados.contactName}:*\\n\\n🔥 *PROMOÇÃO RELÂMPAGO:*\\n• 1º mês: R$ 49,90\\n• Demais: R$ 89,90\\n• SEM taxa de matrícula\\n\\n🎁 *INCLUSO GRÁTIS:*\\n• Avaliação física completa\\n• Plano de treino personalizado\\n• Acesso ao app Full Force\\n• Todas as aulas coletivas\\n\\n⏰ *Oferta válida ATÉ HOJE!*\\n\\n📞 *Interessado? Responda SIM!*`,\n  \n  'horario': `⏰ *HORÁRIOS ${dados.contactName}:*\\n\\n🗓️ *FUNCIONAMENTO:*\\n• Segunda a Sexta: 6h às 22h\\n• Sábado: 8h às 18h\\n• Domingo: 8h às 14h\\n\\n🏋️ *HORÁRIOS DE PICO:*\\n• Manhã: 7h às 9h\\n• Tarde: 17h às 20h\\n\\n✨ *DICA VIP:* 14h às 17h academia mais vazia = atendimento VIP!\\n\\n💪 *Que tal conhecer hoje?*\\n\\n📞 *Responda SIM para agendar!*`,\n  \n  'plano': `📋 *PLANOS ${dados.contactName}:*\\n\\n🥉 *BÁSICO* - R$ 89,90\\n• Musculação + Cardio\\n• Vestiários\\n\\n🥈 *COMPLETO* - R$ 129,90\\n• Tudo do Básico +\\n• Aulas coletivas\\n• Zona funcional\\n\\n🥇 *PREMIUM* - R$ 179,90\\n• Tudo dos anteriores +\\n• 2 Personal Trainers/mês\\n• Avaliação trimestral\\n\\n🔥 *HOJE: 1º mês R$ 49,90 em qualquer plano!*\\n\\n📞 *Qual te interessa mais?*`,\n  \n  'default': `${dados.cumprimento} *${dados.contactName}!*\\n\\n💪 Vejo que você quer saber mais sobre a Full Force!\\n\\n🎯 *BENEFÍCIOS ÚNICOS:*\\n• Equipamentos importados Technogym\\n• Personal trainers certificados\\n• Aulas com instrutores especializados\\n• App com treinos personalizados\\n\\n🔥 *OFERTA ESPECIAL:*\\nPrimeiro mês por apenas R$ 49,90\\n\\n📱 *Que informação específica você quer?*\\n• Valores\\n• Horários\\n• Modalidades\\n• Localização\\n\\n📞 *Estou aqui para ajudar!*`\n};\n\n// Escolher resposta baseada na mensagem\nlet resposta = respostasAltas.default;\nfor (const [key, value] of Object.entries(respostasAltas)) {\n  if (key !== 'default' && dados.messageText.includes(key)) {\n    resposta = value;\n    break;\n  }\n}\n\nreturn {\n  json: {\n    chatId: dados.chatId,\n    resposta: resposta,\n    prioridade: 'alta',\n    followUpDelay: '6 hours'\n  }\n};"
+      },
+      "id": "response-high",
+      "name": "⚡ RESPOSTA ALTA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "// RESPOSTA PADRÃO - ENGAJAMENTO\nconst dados = $json;\n\nconst respostaPadrao = `${dados.cumprimento} *${dados.contactName}!*\\n\\n💪 Obrigado pelo contato com a *Academia Full Force*!\\n\\n🔥 *SOMOS ESPECIALISTAS EM:*\\n• Emagrecimento definitivo\\n• Ganho de massa muscular\\n• Condicionamento físico\\n• Qualidade de vida\\n\\n🎁 *OFERTA ESPECIAL:*\\n7 dias GRÁTIS para você testar!\\n\\n📱 *ESCOLHA SUA OPÇÃO:*\\n1️⃣ Conhecer a academia\\n2️⃣ Valores e planos\\n3️⃣ Agendar avaliação\\n4️⃣ Falar com consultor\\n\\n💬 *Digite o número da opção ou me conte seu objetivo!*\\n\\n🏆 *Sua transformação começa aqui!*`;\n\nreturn {\n  json: {\n    chatId: dados.chatId,\n    resposta: respostaPadrao,\n    prioridade: 'media',\n    followUpDelay: '24 hours'\n  }\n};"
+      },
+      "id": "response-standard",
+      "name": "💬 RESPOSTA PADRÃO",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 380]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"chatId\": \"{{ $json.chatId }}\",\n  \"text\": \"{{ $json.resposta }}\",\n  \"session\": \"default\"\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "send-waha-response",
+      "name": "📤 Enviar WAHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"success\",\n  \"message\": \"Processado com sucesso\",\n  \"prioridade\": \"{{ $json.prioridade }}\",\n  \"timestamp\": \"{{ $now.toISOString() }}\"\n}"
+      },
+      "id": "webhook-response",
+      "name": "✅ Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "1BvQhCgZJqL9T3XrM4NfP8QwHk6yS9cA2vD5eE8fF0gG",
+        "sheetName": "Respostas_Enviadas",
+        "range": "A:F",
+        "options": {
+          "headerRow": 1
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Telefone": "={{ $('🔍 Parse WAHA Message').item.json.contactPhone }}",
+            "Nome": "={{ $('🔍 Parse WAHA Message').item.json.contactName }}",
+            "Prioridade": "={{ $json.prioridade }}",
+            "Data_Hora": "={{ $now.format('DD/MM/YYYY HH:mm') }}",
+            "Status": "Enviado",
+            "Tipo": "Resposta Automática"
+          }
+        }
+      },
+      "id": "log-response",
+      "name": "📊 Log Resposta",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1340, 480]
+    }
+  ],
+  "connections": {
+    "📱 WAHA Webhook": {
+      "main": [
+        [
+          {
+            "node": "🔍 Parse WAHA Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Parse WAHA Message": {
+      "main": [
+        [
+          {
+            "node": "✅ Filtro Mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Filtro Mensagens": {
+      "main": [
+        [],
+        [
+          {
+            "node": "💾 Salvar Conversa",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🎯 Router Prioridade",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 Router Prioridade": {
+      "main": [
+        [
+          {
+            "node": "🚨 RESPOSTA CRÍTICA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⚡ RESPOSTA ALTA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "💬 RESPOSTA PADRÃO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚨 RESPOSTA CRÍTICA": {
+      "main": [
+        [
+          {
+            "node": "📤 Enviar WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚡ RESPOSTA ALTA": {
+      "main": [
+        [
+          {
+            "node": "📤 Enviar WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💬 RESPOSTA PADRÃO": {
+      "main": [
+        [
+          {
+            "node": "📤 Enviar WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Enviar WAHA": {
+      "main": [
+        [
+          {
+            "node": "✅ Webhook Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📊 Log Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": [
+    {
+      "name": "Academia"
+    },
+    {
+      "name": "WAHA"
+    },
+    {
+      "name": "Resposta"
+    },
+    {
+      "name": "Conversão"
+    }
+  ]
+}

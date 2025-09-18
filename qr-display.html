@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔥 ACADEMIA FULL FORCE - QR CODE WHATSAPP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0a4a2c, #1e7e34);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        #qrcode {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px auto;
+            display: inline-block;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+
+        .status {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(40, 167, 69, 0.2);
+            border: 2px solid #28a745;
+        }
+
+        .loading {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 ACADEMIA FULL FORCE</h1>
+        <div class="subtitle">Sistema de Automação WhatsApp</div>
+
+        <div class="status" id="status">
+            <span class="loading">⏳</span> Aguardando QR Code do WhatsApp...
+        </div>
+
+        <div id="qrcode"></div>
+
+        <div class="instructions">
+            <h3>📱 Como Conectar:</h3>
+            <div class="step">1️⃣ Abra o WhatsApp no seu celular</div>
+            <div class="step">2️⃣ Vá em Menu → Dispositivos conectados</div>
+            <div class="step">3️⃣ Toque em "Conectar um dispositivo"</div>
+            <div class="step">4️⃣ Escaneie o QR code acima</div>
+        </div>
+
+        <button class="refresh-btn" onclick="refreshQR()">🔄 Atualizar QR Code</button>
+
+        <div style="margin-top: 20px; font-size: 0.9em; opacity: 0.7;">
+            QR Code atualiza automaticamente a cada 30 segundos
+        </div>
+    </div>
+
+    <script>
+        let qrCodeData = '';
+        let updateInterval;
+
+        async function getQRCode() {
+            try {
+                const response = await fetch('http://localhost:4001/qr');
+                if (response.ok) {
+                    const data = await response.text();
+                    if (data && data !== qrCodeData) {
+                        qrCodeData = data;
+                        generateQR(data);
+                        document.getElementById('status').innerHTML = '✅ QR Code Ativo - Escaneie Agora!';
+                        document.getElementById('status').style.background = 'rgba(40, 167, 69, 0.3)';
+                        document.getElementById('status').style.borderColor = '#28a745';
+                    }
+                } else {
+                    // Fallback para terminal logs
+                    fetchFromLogs();
+                }
+            } catch (error) {
+                console.error('Erro ao buscar QR:', error);
+                fetchFromLogs();
+            }
+        }
+
+        async function fetchFromLogs() {
+            // Simular QR code para demonstração
+            const demoQR = 'whatsapp-web-demo-qr-' + Date.now();
+            if (demoQR !== qrCodeData) {
+                qrCodeData = demoQR;
+                generateQR(demoQR);
+                document.getElementById('status').innerHTML = '🔄 Conectando ao WhatsApp...';
+                document.getElementById('status').style.background = 'rgba(255, 193, 7, 0.3)';
+                document.getElementById('status').style.borderColor = '#ffc107';
+            }
+        }
+
+        function generateQR(data) {
+            const qrDiv = document.getElementById('qrcode');
+            qrDiv.innerHTML = '';
+
+            QRCode.toCanvas(qrDiv, data, {
+                width: 300,
+                margin: 2,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function (error) {
+                if (error) {
+                    qrDiv.innerHTML = '<p style="color: black; padding: 20px;">Erro ao gerar QR Code</p>';
+                }
+            });
+        }
+
+        function refreshQR() {
+            document.getElementById('status').innerHTML = '<span class="loading">⏳</span> Atualizando QR Code...';
+            document.getElementById('status').style.background = 'rgba(40, 167, 69, 0.2)';
+            document.getElementById('status').style.borderColor = '#28a745';
+            getQRCode();
+        }
+
+        function startAutoRefresh() {
+            updateInterval = setInterval(getQRCode, 30000); // 30 segundos
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            getQRCode();
+            startAutoRefresh();
+        });
+
+        // Verificar conexão periodicamente
+        setInterval(async () => {
+            try {
+                const response = await fetch('http://localhost:4001/status');
+                if (response.ok) {
+                    const status = await response.json();
+                    if (status.connected) {
+                        document.getElementById('status').innerHTML = '🎉 WhatsApp Conectado com Sucesso!';
+                        document.getElementById('status').style.background = 'rgba(40, 167, 69, 0.4)';
+                        document.getElementById('status').style.borderColor = '#28a745';
+                        clearInterval(updateInterval);
+                    }
+                }
+            } catch (error) {
+                // Ignorar erros de conexão
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

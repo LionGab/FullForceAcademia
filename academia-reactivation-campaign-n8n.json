@@ -1,0 +1,382 @@
+{
+  "name": "🔥 Academia Full Force - Campanha Reativação MASSIVA",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "webhook",
+        "webhookId": "academia-trigger"
+      },
+      "id": "trigger",
+      "name": "🚀 Trigger Campanha",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "1BvQhCgZJqL9T3XrM4NfP8QwHk6yS9cA2vD5eE8fF0gG",
+        "sheetName": "Alunos",
+        "range": "A:H",
+        "options": {
+          "headerRow": 1
+        }
+      },
+      "id": "load-members",
+      "name": "📊 Carregar Base de Alunos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Segmentar alunos: ATIVOS vs INATIVOS vs PROSPECTS\nconst items = $input.all();\nconst today = new Date();\nconst thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));\nconst sixtyDaysAgo = new Date(today.getTime() - (60 * 24 * 60 * 60 * 1000));\n\nconst segmentedMembers = {\n  inativos_criticos: [],    // +60 dias sem atividade\n  inativos_moderados: [],   // 30-60 dias sem atividade  \n  ativos_baixa_freq: [],    // Ativos mas baixa frequência\n  prospects: [],            // Nunca foram alunos\n  ativos: []               // Frequência boa\n};\n\nitems.forEach(item => {\n  const data = item.json;\n  const ultimaAtividade = new Date(data['Última Atividade'] || data['Data Cadastro']);\n  const status = data.Status?.toLowerCase() || '';\n  const frequencia = parseInt(data['Frequência Mensal'] || 0);\n  const telefone = data.Telefone?.replace(/\\D/g, '');\n  \n  // Validar telefone\n  if (!telefone || telefone.length < 10) return;\n  \n  const member = {\n    nome: data.Nome,\n    telefone: telefone,\n    email: data.Email,\n    plano: data.Plano,\n    ultimaAtividade: ultimaAtividade.toISOString(),\n    frequencia: frequencia,\n    status: status,\n    valor: data['Valor Plano'] || 0,\n    diasInativo: Math.floor((today - ultimaAtividade) / (1000 * 60 * 60 * 24))\n  };\n  \n  // SEGMENTAÇÃO INTELIGENTE\n  if (ultimaAtividade < sixtyDaysAgo) {\n    segmentedMembers.inativos_criticos.push({\n      ...member,\n      urgencia: 'CRITICA',\n      oferta: 'Volta por R$ 49,90 no primeiro mês',\n      desconto: 70\n    });\n  } else if (ultimaAtividade < thirtyDaysAgo) {\n    segmentedMembers.inativos_moderados.push({\n      ...member,\n      urgencia: 'ALTA',\n      oferta: '50% OFF no próximo mês',\n      desconto: 50\n    });\n  } else if (frequencia < 8) {\n    segmentedMembers.ativos_baixa_freq.push({\n      ...member,\n      urgencia: 'MEDIA',\n      oferta: 'Personal grátis + Avaliação',\n      desconto: 0\n    });\n  } else if (status.includes('prospect') || status.includes('lead')) {\n    segmentedMembers.prospects.push({\n      ...member,\n      urgencia: 'BAIXA',\n      oferta: '7 dias grátis + Avaliação',\n      desconto: 0\n    });\n  } else {\n    segmentedMembers.ativos.push(member);\n  }\n});\n\nreturn [\n  { json: { tipo: 'inativos_criticos', membros: segmentedMembers.inativos_criticos, count: segmentedMembers.inativos_criticos.length } },\n  { json: { tipo: 'inativos_moderados', membros: segmentedMembers.inativos_moderados, count: segmentedMembers.inativos_moderados.length } },\n  { json: { tipo: 'ativos_baixa_freq', membros: segmentedMembers.ativos_baixa_freq, count: segmentedMembers.ativos_baixa_freq.length } },\n  { json: { tipo: 'prospects', membros: segmentedMembers.prospects, count: segmentedMembers.prospects.length } },\n  { json: { tipo: 'resumo', \n    total_inativos: segmentedMembers.inativos_criticos.length + segmentedMembers.inativos_moderados.length,\n    potencial_receita: (segmentedMembers.inativos_criticos.length * 89.90 * 0.3) + (segmentedMembers.inativos_moderados.length * 89.90 * 0.2),\n    meta_conversao: '30% críticos + 20% moderados = +' + Math.floor((segmentedMembers.inativos_criticos.length * 0.3) + (segmentedMembers.inativos_moderados.length * 0.2)) + ' alunos'\n  }}\n];"
+      },
+      "id": "segment-members",
+      "name": "🎯 Segmentação Inteligente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.tipo }}",
+        "rules": {
+          "rules": [
+            {
+              "operation": "equal",
+              "value2": "inativos_criticos"
+            },
+            {
+              "operation": "equal",
+              "value2": "inativos_moderados"
+            },
+            {
+              "operation": "equal",
+              "value2": "ativos_baixa_freq"
+            },
+            {
+              "operation": "equal",
+              "value2": "prospects"
+            }
+          ]
+        }
+      },
+      "id": "route-segments",
+      "name": "🔀 Roteador por Urgência",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CAMPANHA CRÍTICA - MÁXIMA URGÊNCIA\nconst membros = $json.membros;\nconst campanhas = [];\n\nmembros.forEach((membro, index) => {\n  const mensagem = `🚨 *${membro.nome}*, SENTIMOS SUA FALTA!\\n\\n💔 Já são ${membro.diasInativo} dias sem você na academia...\\n\\n🔥 *OFERTA ESPECIAL SÓ HOJE:*\\n💰 ${membro.oferta}\\n⏰ *Válido até 23:59h*\\n\\n💪 Sua saúde não pode esperar!\\n\\n📞 Responda SIM para garantir`;\n  \n  campanhas.push({\n    json: {\n      telefone: membro.telefone,\n      nome: membro.nome,\n      mensagem: mensagem,\n      urgencia: 'CRITICA',\n      delay: index * 2000, // 2 segundos entre envios\n      followUp1: '6 horas',\n      followUp2: '24 horas',\n      followUp3: '48 horas'\n    }\n  });\n});\n\nreturn campanhas;"
+      },
+      "id": "campaign-critical",
+      "name": "🚨 CAMPANHA CRÍTICA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 180]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CAMPANHA MODERADA - ALTA URGÊNCIA\nconst membros = $json.membros;\nconst campanhas = [];\n\nmembros.forEach((membro, index) => {\n  const mensagem = `💪 *${membro.nome}*, que saudade!\\n\\n🎯 Já são ${membro.diasInativo} dias... hora de voltar aos treinos!\\n\\n🔥 *OFERTA ESPECIAL:*\\n💰 ${membro.oferta}\\n📅 *Válido por 48h*\\n\\n✨ Vamos retomar sua evolução?\\n\\n📞 Responda SIM e volte hoje mesmo!`;\n  \n  campanhas.push({\n    json: {\n      telefone: membro.telefone,\n      nome: membro.nome,\n      mensagem: mensagem,\n      urgencia: 'ALTA',\n      delay: index * 3000, // 3 segundos entre envios\n      followUp1: '12 horas',\n      followUp2: '3 dias'\n    }\n  });\n});\n\nreturn campanhas;"
+      },
+      "id": "campaign-moderate",
+      "name": "⚡ CAMPANHA ALTA",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 280]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CAMPANHA ENGAJAMENTO - RETENÇÃO\nconst membros = $json.membros;\nconst campanhas = [];\n\nmembros.forEach((membro, index) => {\n  const mensagem = `🔥 *${membro.nome}*, você é TOP!\\n\\n📊 Notei que sua frequência pode melhorar...\\n\\n🎁 *PRESENTE ESPECIAL:*\\n💰 ${membro.oferta}\\n🏆 Vamos turbinar seus resultados?\\n\\n💪 Que tal um treino hoje?\\n\\n📞 Responda SIM para agendar!`;\n  \n  campanhas.push({\n    json: {\n      telefone: membro.telefone,\n      nome: membro.nome,\n      mensagem: mensagem,\n      urgencia: 'MEDIA',\n      delay: index * 5000, // 5 segundos entre envios\n      followUp1: '1 semana'\n    }\n  });\n});\n\nreturn campanhas;"
+      },
+      "id": "campaign-engagement",
+      "name": "🎯 CAMPANHA ENGAJAMENTO",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 380]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CAMPANHA PROSPECTS - CONVERSÃO\nconst membros = $json.membros;\nconst campanhas = [];\n\nmembros.forEach((membro, index) => {\n  const mensagem = `🌟 *${membro.nome}*, hora de começar!\\n\\n💪 Sua transformação te espera na Full Force!\\n\\n🎁 *OFERTA ESPECIAL:*\\n💰 ${membro.oferta}\\n🏋️ Equipamentos de última geração\\n👨‍🏫 Professores especializados\\n\\n🔥 Pronto para a mudança?\\n\\n📞 Responda SIM e comece hoje!`;\n  \n  campanhas.push({\n    json: {\n      telefone: membro.telefone,\n      nome: membro.nome,\n      mensagem: mensagem,\n      urgencia: 'BAIXA',\n      delay: index * 8000, // 8 segundos entre envios\n      followUp1: '3 dias',\n      followUp2: '1 semana'\n    }\n  });\n});\n\nreturn campanhas;"
+      },
+      "id": "campaign-prospects",
+      "name": "🌟 CAMPANHA PROSPECTS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 480]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "expression": "={{ $json.delay }}"
+      },
+      "id": "delay-send",
+      "name": "⏱️ Delay Inteligente",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"chatId\": \"{{ $json.telefone }}@c.us\",\n  \"text\": \"{{ $json.mensagem }}\",\n  \"session\": \"default\"\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "send-waha",
+      "name": "📱 Enviar via WAHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "1BvQhCgZJqL9T3XrM4NfP8QwHk6yS9cA2vD5eE8fF0gG",
+        "sheetName": "Campanhas",
+        "range": "A:G",
+        "options": {
+          "headerRow": 1
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Telefone": "={{ $json.telefone }}",
+            "Nome": "={{ $json.nome }}",
+            "Urgencia": "={{ $json.urgencia }}",
+            "Data_Envio": "={{ $now.format('DD/MM/YYYY HH:mm') }}",
+            "Status": "Enviado",
+            "Tipo_Campanha": "Reativação",
+            "Observacoes": "Campanha automática via n8n"
+          }
+        }
+      },
+      "id": "log-campaign",
+      "name": "📊 Log da Campanha",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1780, 300]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.followUp1 }}",
+        "unit": "hours"
+      },
+      "id": "schedule-followup",
+      "name": "📅 Agendar Follow-up",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1560, 480]
+    },
+    {
+      "parameters": {
+        "jsCode": "// FOLLOW-UP INTELIGENTE\nconst dados = $json;\n\nconst followUpMessages = {\n  CRITICA: `🚨 *${dados.nome}*, última chance!\\n\\n⏰ Sua oferta especial expira em 2 horas\\n💰 R$ 49,90 no primeiro mês\\n\\n💔 Não deixe sua saúde para depois!\\n\\n📞 Responda AGORA ou perca esta oportunidade`,\n  \n  ALTA: `⚡ *${dados.nome}*, ainda dá tempo!\\n\\n🎯 Oferta de 50% OFF válida até amanhã\\n💪 Seus músculos sentem sua falta\\n\\n🔥 Volte hoje e retome sua evolução!\\n\\n📞 Responda SIM para garantir`,\n  \n  MEDIA: `💪 *${dados.nome}*, vamos acelerar?\\n\\n📈 Seus resultados podem ser muito melhores\\n🎁 Personal + Avaliação te esperam\\n\\n🏆 Que tal marcarmos hoje?\\n\\n📞 Responda SIM e vamos nessa!`,\n  \n  BAIXA: `🌟 *${dados.nome}*, ainda interessado?\\n\\n✨ 7 dias grátis ainda disponíveis\\n💪 Academia Full Force = Resultados reais\\n\\n🎯 Pronto para começar sua transformação?\\n\\n📞 Responda SIM e comece hoje!`\n};\n\nreturn {\n  json: {\n    telefone: dados.telefone,\n    nome: dados.nome,\n    mensagem: followUpMessages[dados.urgencia],\n    urgencia: dados.urgencia,\n    tipo: 'followup_1'\n  }\n};"
+      },
+      "id": "followup-message",
+      "name": "🔄 Follow-up Inteligente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 480]
+    }
+  ],
+  "connections": {
+    "🚀 Trigger Campanha": {
+      "main": [
+        [
+          {
+            "node": "📊 Carregar Base de Alunos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Carregar Base de Alunos": {
+      "main": [
+        [
+          {
+            "node": "🎯 Segmentação Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 Segmentação Inteligente": {
+      "main": [
+        [
+          {
+            "node": "🔀 Roteador por Urgência",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Roteador por Urgência": {
+      "main": [
+        [
+          {
+            "node": "🚨 CAMPANHA CRÍTICA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⚡ CAMPANHA ALTA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🎯 CAMPANHA ENGAJAMENTO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🌟 CAMPANHA PROSPECTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚨 CAMPANHA CRÍTICA": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Delay Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚡ CAMPANHA ALTA": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Delay Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 CAMPANHA ENGAJAMENTO": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Delay Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌟 CAMPANHA PROSPECTS": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Delay Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏱️ Delay Inteligente": {
+      "main": [
+        [
+          {
+            "node": "📱 Enviar via WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📱 Enviar via WAHA": {
+      "main": [
+        [
+          {
+            "node": "📊 Log da Campanha",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📅 Agendar Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📅 Agendar Follow-up": {
+      "main": [
+        [
+          {
+            "node": "🔄 Follow-up Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Follow-up Inteligente": {
+      "main": [
+        [
+          {
+            "node": "📱 Enviar via WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    {
+      "name": "Academia"
+    },
+    {
+      "name": "Reativação"
+    },
+    {
+      "name": "WhatsApp"
+    },
+    {
+      "name": "Conversão"
+    }
+  ]
+}
