@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Academia - Dashboard Produção</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-card h3 {
+            color: #25D366;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .status-indicator.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-indicator.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-indicator.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .qr-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .qr-container {
+            background: white;
+            border: 3px solid #25D366;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            display: inline-block;
+            min-height: 350px;
+            min-width: 350px;
+        }
+
+        #qrcode {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 10px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn:hover {
+            background: #128C7E;
+            transform: translateY(-2px);
+        }
+
+        .btn.secondary {
+            background: #6c757d;
+        }
+
+        .btn.secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn.danger {
+            background: #dc3545;
+        }
+
+        .btn.danger:hover {
+            background: #c82333;
+        }
+
+        .logs {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            color: #333;
+        }
+
+        .log-container {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #25D366;
+            padding-left: 10px;
+        }
+
+        .log-entry.error {
+            border-left-color: #dc3545;
+            color: #ff6b6b;
+        }
+
+        .log-entry.success {
+            border-left-color: #28a745;
+            color: #51cf66;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #25D366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #25D366;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🏋️‍♀️</span>
+                WhatsApp Academia
+                <span>📱</span>
+            </h1>
+            <p>Sistema de Produção com WAHA</p>
+            <p><strong>FullForce Academia - Matupá</strong></p>
+        </div>
+
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>📊 Status do Sistema</h3>
+                <div class="status-indicator loading" id="systemStatus">
+                    <div class="loading"></div>
+                    Verificando sistema...
+                </div>
+                <div class="status-indicator loading" id="wahaStatus">
+                    <div class="loading"></div>
+                    Verificando WAHA...
+                </div>
+                <div class="status-indicator loading" id="whatsappStatus">
+                    <div class="loading"></div>
+                    Verificando WhatsApp...
+                </div>
+            </div>
+
+            <div class="status-card">
+                <h3>📈 Estatísticas</h3>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="messagesCount">0</div>
+                        <div class="stat-label">Mensagens</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="uptimeValue">--</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                </div>
+                <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                    Última atividade: <span id="lastActivity">--</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="qr-section">
+            <h3>📱 Conexão WhatsApp</h3>
+            <div class="qr-container">
+                <div id="qrcode">
+                    <div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔄</div>
+                        <div>Carregando QR Code...</div>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 15px; color: #666;">
+                Escaneie o QR Code com seu WhatsApp para conectar a academia
+            </p>
+        </div>
+
+        <div class="actions">
+            <button class="btn" onclick="checkStatus()">
+                🔄 Atualizar Status
+            </button>
+            <button class="btn" onclick="getQRCode()">
+                📱 Buscar QR Code
+            </button>
+            <button class="btn secondary" onclick="sendTestMessage()">
+                💬 Mensagem Teste
+            </button>
+            <a href="http://localhost:3000" target="_blank" class="btn secondary">
+                🌐 WAHA Dashboard
+            </a>
+            <button class="btn secondary" onclick="viewLogs()">
+                📋 Ver Logs
+            </button>
+            <button class="btn danger" onclick="resetSession()">
+                🔄 Reset Sessão
+            </button>
+        </div>
+
+        <div class="logs">
+            <h3>📝 Logs do Sistema</h3>
+            <div class="log-container" id="logContainer">
+                <div class="log-entry">Sistema iniciado...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let systemStats = {
+            messages: 0,
+            startTime: new Date(),
+            lastActivity: null
+        };
+
+        function addLog(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+
+            const timestamp = new Date().toLocaleTimeString();
+            logEntry.textContent = `[${timestamp}] ${message}`;
+
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateStatus(elementId, status, text) {
+            const element = document.getElementById(elementId);
+            element.className = `status-indicator ${status}`;
+
+            let icon = '';
+            switch(status) {
+                case 'connected': icon = '✅'; break;
+                case 'disconnected': icon = '❌'; break;
+                case 'loading': icon = '<div class="loading"></div>'; break;
+            }
+
+            element.innerHTML = `${icon} ${text}`;
+        }
+
+        async function checkStatus() {
+            addLog('Verificando status do sistema...');
+
+            try {
+                // Verificar sistema principal
+                const response = await fetch('/health');
+                const data = await response.json();
+
+                updateStatus('systemStatus', 'connected', 'Sistema Online');
+
+                if (data.whatsapp === 'WORKING') {
+                    updateStatus('whatsappStatus', 'connected', 'WhatsApp Conectado');
+                } else {
+                    updateStatus('whatsappStatus', 'disconnected', `WhatsApp: ${data.whatsapp}`);
+                }
+
+                // Atualizar estatísticas
+                if (data.lastActivity) {
+                    systemStats.lastActivity = new Date(data.lastActivity);
+                    document.getElementById('lastActivity').textContent =
+                        systemStats.lastActivity.toLocaleString();
+                }
+
+                updateUptime();
+                addLog('Status atualizado com sucesso', 'success');
+
+            } catch (error) {
+                updateStatus('systemStatus', 'disconnected', 'Sistema Offline');
+                updateStatus('whatsappStatus', 'disconnected', 'WhatsApp Desconectado');
+                addLog(`Erro ao verificar status: ${error.message}`, 'error');
+            }
+
+            // Verificar WAHA
+            try {
+                const wahaResponse = await fetch('http://localhost:3000');
+                updateStatus('wahaStatus', 'connected', 'WAHA Online');
+            } catch (error) {
+                updateStatus('wahaStatus', 'disconnected', 'WAHA Offline');
+                addLog('WAHA container não está respondendo', 'error');
+            }
+        }
+
+        async function getQRCode() {
+            addLog('Buscando QR Code...');
+
+            try {
+                const response = await fetch('/qr');
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (data.qr) {
+                        document.getElementById('qrcode').innerHTML =
+                            `<img src="${data.qr}" style="max-width: 100%; max-height: 100%;" alt="QR Code">`;
+                        addLog('QR Code obtido com sucesso', 'success');
+                    } else {
+                        showQRError('QR Code não disponível no momento');
+                    }
+                } else {
+                    const errorData = await response.json();
+                    showQRError(errorData.error || 'Erro ao obter QR Code');
+                }
+
+            } catch (error) {
+                showQRError('Erro na conexão: ' + error.message);
+                addLog(`Erro ao buscar QR Code: ${error.message}`, 'error');
+            }
+        }
+
+        function showQRError(message) {
+            document.getElementById('qrcode').innerHTML = `
+                <div style="text-align: center; color: #dc3545;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">⚠️</div>
+                    <div style="font-weight: bold; margin-bottom: 10px;">Erro</div>
+                    <div style="font-size: 14px;">${message}</div>
+                    <button onclick="getQRCode()" style="
+                        margin-top: 15px;
+                        background: #25D366;
+                        color: white;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: 5px;
+                        cursor: pointer;
+                    ">🔄 Tentar Novamente</button>
+                </div>
+            `;
+        }
+
+        async function sendTestMessage() {
+            const phone = prompt('Digite o número (com código do país, ex: 5565999999999):');
+            if (!phone) return;
+
+            const message = 'Teste de conexão da FullForce Academia! 💪🏋️‍♀️';
+
+            addLog(`Enviando mensagem teste para ${phone}...`);
+
+            try {
+                const response = await fetch('/send-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        to: phone + '@c.us',
+                        message: message
+                    })
+                });
+
+                if (response.ok) {
+                    addLog('Mensagem teste enviada com sucesso!', 'success');
+                    systemStats.messages++;
+                    updateStats();
+                } else {
+                    const error = await response.json();
+                    addLog(`Erro ao enviar mensagem: ${error.error}`, 'error');
+                }
+
+            } catch (error) {
+                addLog(`Erro na requisição: ${error.message}`, 'error');
+            }
+        }
+
+        async function resetSession() {
+            if (!confirm('Tem certeza que deseja resetar a sessão? Isso irá desconectar o WhatsApp.')) {
+                return;
+            }
+
+            addLog('Resetando sessão...', 'error');
+            // Implementar reset da sessão via API WAHA
+            alert('Função de reset será implementada');
+        }
+
+        function viewLogs() {
+            const logContainer = document.getElementById('logContainer');
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function updateUptime() {
+            const now = new Date();
+            const uptime = now - systemStats.startTime;
+            const hours = Math.floor(uptime / (1000 * 60 * 60));
+            const minutes = Math.floor((uptime % (1000 * 60 * 60)) / (1000 * 60));
+
+            document.getElementById('uptimeValue').textContent = `${hours}h ${minutes}m`;
+        }
+
+        function updateStats() {
+            document.getElementById('messagesCount').textContent = systemStats.messages;
+            updateUptime();
+        }
+
+        // Auto-refresh
+        setInterval(() => {
+            checkStatus();
+            updateStats();
+        }, 30000); // Verificar a cada 30 segundos
+
+        // Inicialização
+        window.onload = function() {
+            addLog('Dashboard carregado');
+            checkStatus();
+            getQRCode();
+
+            // Atualizar uptime a cada minuto
+            setInterval(updateStats, 60000);
+        };
+
+        // Detectar mudanças de visibilidade da página
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                checkStatus();
+            }
+        });
+    </script>
+</body>
+</html>
