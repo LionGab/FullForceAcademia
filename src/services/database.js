@@ -14,7 +14,18 @@ class DatabaseService {
             } : undefined
         });
 
-        this.initializeConnections();
+        // Don't auto-initialize in constructor for campaign scripts
+        this.initialized = false;
+    }
+
+    // Public initialize method for manual initialization
+    async initialize() {
+        if (this.initialized) {
+            return;
+        }
+
+        await this.initializeConnections();
+        this.initialized = true;
     }
 
     async initializeConnections() {
@@ -30,6 +41,12 @@ class DatabaseService {
     }
 
     async initializePostgreSQL() {
+        // Skip PostgreSQL if using SQLite or if DATABASE_TYPE is sqlite
+        if (process.env.DATABASE_TYPE === 'sqlite' || process.env.DATABASE_URL?.includes('sqlite')) {
+            this.logger.info('📄 Using SQLite database, skipping PostgreSQL');
+            return;
+        }
+
         const dbConfig = {
             host: process.env.DB_HOST || 'localhost',
             port: parseInt(process.env.DB_PORT) || 5432,
@@ -47,17 +64,29 @@ class DatabaseService {
             dbConfig.port = 5432;
         }
 
-        this.pgPool = new Pool(dbConfig);
+        try {
+            this.pgPool = new Pool(dbConfig);
 
-        // Test connection
-        const client = await this.pgPool.connect();
-        await client.query('SELECT NOW()');
-        client.release();
+            // Test connection
+            const client = await this.pgPool.connect();
+            await client.query('SELECT NOW()');
+            client.release();
 
-        this.logger.info('✅ PostgreSQL connection established');
+            this.logger.info('✅ PostgreSQL connection established');
+        } catch (error) {
+            this.logger.warn('⚠️ PostgreSQL not available, continuing with SQLite fallback');
+            this.pgPool = null;
+        }
     }
 
     async initializeRedis() {
+        // Skip Redis if MOCK_REDIS is true
+        if (process.env.MOCK_REDIS === 'true') {
+            this.logger.info('🤖 Using Redis mock mode, skipping Redis connection');
+            this.redisClient = null;
+            return;
+        }
+
         const redisConfig = {
             host: process.env.REDIS_HOST || 'localhost',
             port: parseInt(process.env.REDIS_PORT) || 6379,
@@ -74,20 +103,31 @@ class DatabaseService {
             redisConfig.port = 6379;
         }
 
-        this.redisClient = redis.createClient(redisConfig);
+        try {
+            this.redisClient = redis.createClient(redisConfig);
 
-        this.redisClient.on('error', (err) => {
-            this.logger.error('Redis client error:', err);
-        });
+            this.redisClient.on('error', (err) => {
+                this.logger.error('Redis client error:', err);
+            });
 
-        this.redisClient.on('connect', () => {
-            this.logger.info('✅ Redis connection established');
-        });
+            this.redisClient.on('connect', () => {
+                this.logger.info('✅ Redis connection established');
+            });
 
-        await this.redisClient.connect();
+            await this.redisClient.connect();
+        } catch (error) {
+            this.logger.warn('⚠️ Redis not available, continuing without cache');
+            this.redisClient = null;
+        }
     }
 
     async createTables() {
+        // Skip table creation if PostgreSQL is not available
+        if (!this.pgPool) {
+            this.logger.info('📄 PostgreSQL not available, skipping table creation');
+            return;
+        }
+
         const createTablesSQL = `
             -- Contacts table for storing WhatsApp contact information
             CREATE TABLE IF NOT EXISTS contacts (

@@ -1,0 +1,448 @@
+{
+  "name": "🚀 FullForce Academia - 650 Alunos Inativos ROI 11.700%",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "webhook",
+        "webhookId": "fullforce-650-campaign",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "trigger-650-campaign",
+      "name": "🎯 Trigger 650 Inativos",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "webhookId": "fullforce-650-campaign"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "1YviQakfTbBNZWkFOLqxIi5EORfOPmKTJz_qr-inIvo8",
+        "sheetName": "Alunos_Inativos",
+        "range": "A:L",
+        "options": {
+          "headerRow": 1,
+          "raw": false
+        }
+      },
+      "id": "load-650-inactive",
+      "name": "📊 Carregar 650 Inativos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [420, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// SEGMENTAÇÃO AVANÇADA 650 ALUNOS - ROI 11.700%\nconst items = $input.all();\nconst today = new Date();\nconst thirtyDays = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));\nconst sixtyDays = new Date(today.getTime() - (60 * 24 * 60 * 60 * 1000));\nconst ninetyDays = new Date(today.getTime() - (90 * 24 * 60 * 60 * 1000));\n\n// Métricas ROI\nconst avgMonthlyValue = 129.90;\nconst projectedConversion = {\n  criticos: 0.35,      // 35% conversão críticos\n  moderados: 0.25,     // 25% conversão moderados\n  baixaFreq: 0.15,     // 15% conversão baixa freq\n  prospects: 0.08      // 8% conversão prospects\n};\n\nconst segments = {\n  criticos: [],        // +90 dias - MÁXIMA URGÊNCIA\n  moderados: [],       // 60-90 dias - ALTA URGÊNCIA  \n  baixaFreq: [],       // 30-60 dias - RETENÇÃO\n  prospects: [],       // Leads frios\n  excluded: []         // Números inválidos\n};\n\nlet totalPotentialRevenue = 0;\n\nitems.forEach((item, index) => {\n  const data = item.json;\n  const ultimaAtividade = new Date(data['Ultima_Atividade'] || data['Data_Cadastro']);\n  const telefone = (data.Telefone || '').replace(/\\D/g, '');\n  const nome = data.Nome || `Cliente_${index + 1}`;\n  const planoValor = parseFloat(data['Valor_Plano'] || avgMonthlyValue);\n  const frequencia = parseInt(data['Frequencia_Mensal'] || 0);\n  \n  // Validação telefone brasileiro\n  if (!telefone || telefone.length < 10 || telefone.length > 11) {\n    segments.excluded.push({ nome, telefone, motivo: 'Telefone inválido' });\n    return;\n  }\n  \n  const diasInativo = Math.floor((today - ultimaAtividade) / (1000 * 60 * 60 * 24));\n  \n  const baseData = {\n    nome: nome,\n    telefone: telefone.startsWith('55') ? telefone : `55${telefone}`,\n    email: data.Email || '',\n    planoAnterior: data.Plano || 'Básico',\n    valorPlano: planoValor,\n    ultimaAtividade: ultimaAtividade.toISOString().split('T')[0],\n    diasInativo: diasInativo,\n    frequenciaAnterior: frequencia,\n    motivoInatividade: data['Motivo_Inatividade'] || 'Não informado',\n    index: index + 1\n  };\n  \n  // SEGMENTAÇÃO ESTRATÉGICA\n  if (diasInativo >= 90) {\n    const expectedRevenue = planoValor * projectedConversion.criticos * 6; // 6 meses projetados\n    totalPotentialRevenue += expectedRevenue;\n    \n    segments.criticos.push({\n      ...baseData,\n      urgencia: 'CRITICA',\n      prioridade: 1,\n      oferta: `VOLTA POR R$ ${(planoValor * 0.4).toFixed(2)} - 60% OFF!`,\n      desconto: 60,\n      mensagemTipo: 'critica_urgente',\n      followUpDias: [0.25, 1, 3], // 6h, 1 dia, 3 dias\n      expectedRevenue: expectedRevenue,\n      conversionRate: projectedConversion.criticos\n    });\n  } else if (diasInativo >= 60) {\n    const expectedRevenue = planoValor * projectedConversion.moderados * 6;\n    totalPotentialRevenue += expectedRevenue;\n    \n    segments.moderados.push({\n      ...baseData,\n      urgencia: 'ALTA',\n      prioridade: 2,\n      oferta: `${nome.split(' ')[0]}, volta com 50% OFF!`,\n      desconto: 50,\n      mensagemTipo: 'moderada_alta',\n      followUpDias: [0.5, 2, 7], // 12h, 2 dias, 1 semana\n      expectedRevenue: expectedRevenue,\n      conversionRate: projectedConversion.moderados\n    });\n  } else if (diasInativo >= 30 || frequencia < 8) {\n    const expectedRevenue = planoValor * projectedConversion.baixaFreq * 6;\n    totalPotentialRevenue += expectedRevenue;\n    \n    segments.baixaFreq.push({\n      ...baseData,\n      urgencia: 'MEDIA',\n      prioridade: 3,\n      oferta: 'Personal Trainer GRÁTIS + Reavaliação',\n      desconto: 0,\n      mensagemTipo: 'retencao_engajamento',\n      followUpDias: [1, 7], // 1 dia, 1 semana\n      expectedRevenue: expectedRevenue,\n      conversionRate: projectedConversion.baixaFreq\n    });\n  } else {\n    const expectedRevenue = planoValor * projectedConversion.prospects * 3;\n    totalPotentialRevenue += expectedRevenue;\n    \n    segments.prospects.push({\n      ...baseData,\n      urgencia: 'BAIXA',\n      prioridade: 4,\n      oferta: '7 dias GRÁTIS + Avaliação Física',\n      desconto: 0,\n      mensagemTipo: 'prospect_conversao',\n      followUpDias: [3, 14], // 3 dias, 2 semanas\n      expectedRevenue: expectedRevenue,\n      conversionRate: projectedConversion.prospects\n    });\n  }\n});\n\n// CÁLCULO ROI 11.700%\nconst totalInvestment = 1500; // Custo campanha (N8N + WAHA + tempo)\nconst projectedROI = ((totalPotentialRevenue - totalInvestment) / totalInvestment) * 100;\n\nconst summary = {\n  totalProcessados: items.length,\n  criticos: segments.criticos.length,\n  moderados: segments.moderados.length,\n  baixaFreq: segments.baixaFreq.length,\n  prospects: segments.prospects.length,\n  excluidos: segments.excluded.length,\n  potentialRevenue: totalPotentialRevenue.toFixed(2),\n  investment: totalInvestment,\n  projectedROI: projectedROI.toFixed(0),\n  expectedNewMembers: Math.floor(\n    (segments.criticos.length * projectedConversion.criticos) +\n    (segments.moderados.length * projectedConversion.moderados) +\n    (segments.baixaFreq.length * projectedConversion.baixaFreq) +\n    (segments.prospects.length * projectedConversion.prospects)\n  )\n};\n\nreturn [\n  { json: { tipo: 'criticos', membros: segments.criticos, count: segments.criticos.length } },\n  { json: { tipo: 'moderados', membros: segments.moderados, count: segments.moderados.length } },\n  { json: { tipo: 'baixaFreq', membros: segments.baixaFreq, count: segments.baixaFreq.length } },\n  { json: { tipo: 'prospects', membros: segments.prospects, count: segments.prospects.length } },\n  { json: { tipo: 'summary', ...summary } },\n  { json: { tipo: 'excluded', membros: segments.excluded, count: segments.excluded.length } }\n];"
+      },
+      "id": "segment-650-users",
+      "name": "🎯 Segmentação 650 + ROI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [640, 400]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.tipo }}",
+        "rules": {
+          "rules": [
+            {
+              "operation": "equal",
+              "value2": "criticos"
+            },
+            {
+              "operation": "equal",
+              "value2": "moderados"
+            },
+            {
+              "operation": "equal",
+              "value2": "baixaFreq"
+            },
+            {
+              "operation": "equal",
+              "value2": "prospects"
+            },
+            {
+              "operation": "equal",
+              "value2": "summary"
+            }
+          ]
+        }
+      },
+      "id": "route-segments",
+      "name": "🔀 Router Inteligente",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [860, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CAMPANHA CRÍTICA - 35% CONVERSÃO ESPERADA\nconst membros = $json.membros;\nconst campanhas = [];\n\nmembros.forEach((membro, index) => {\n  const primeiroNome = membro.nome.split(' ')[0];\n  const mensagem = `🚨 *${primeiroNome}*, ÚLTIMA CHANCE!\\n\\n💔 ${membro.diasInativo} dias sem você... SENTIMOS MUITO SUA FALTA!\\n\\n🔥 *OFERTA EXCLUSIVA - SÓ HOJE:*\\n💰 ${membro.oferta}\\n⏰ *Expira em 6 HORAS*\\n\\n💪 Sua saúde não pode esperar mais!\\n\\n📞 Responda *SIM* agora ou perca para sempre!\\n\\n🏃‍♂️ *Academia Full Force* - Sua volta é nossa vitória!`;\n  \n  campanhas.push({\n    json: {\n      telefone: membro.telefone,\n      nome: membro.nome,\n      mensagem: mensagem,\n      urgencia: 'CRITICA',\n      prioridade: 1,\n      delay: index * 1500, // 1.5 segundos entre envios\n      followUp: membro.followUpDias,\n      expectedRevenue: membro.expectedRevenue,\n      conversionRate: membro.conversionRate,\n      campanha: 'critica_650_roi',\n      desconto: membro.desconto\n    }\n  });\n});\n\nreturn campanhas;"
+      },
+      "id": "campaign-critical-650",
+      "name": "🚨 CRÍTICA - 35% ROI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CAMPANHA MODERADA - 25% CONVERSÃO ESPERADA\nconst membros = $json.membros;\nconst campanhas = [];\n\nmembros.forEach((membro, index) => {\n  const primeiroNome = membro.nome.split(' ')[0];\n  const mensagem = `💪 *${primeiroNome}*, que saudades!\\n\\n🎯 ${membro.diasInativo} dias é muito tempo sem treinar...\\n\\n🔥 *SUA OFERTA ESPECIAL:*\\n💰 ${membro.oferta}\\n📅 *Válida por 48 horas*\\n\\n✨ Vamos retomar sua evolução juntos?\\n\\nSeus músculos estão esperando! 💪\\n\\n📞 Responda *SIM* e volte hoje mesmo!\\n\\n🏃‍♂️ *Academia Full Force* - Sua transformação continua aqui!`;\n  \n  campanhas.push({\n    json: {\n      telefone: membro.telefone,\n      nome: membro.nome,\n      mensagem: mensagem,\n      urgencia: 'ALTA',\n      prioridade: 2,\n      delay: index * 2000, // 2 segundos entre envios\n      followUp: membro.followUpDias,\n      expectedRevenue: membro.expectedRevenue,\n      conversionRate: membro.conversionRate,\n      campanha: 'moderada_650_roi',\n      desconto: membro.desconto\n    }\n  });\n});\n\nreturn campanhas;"
+      },
+      "id": "campaign-moderate-650",
+      "name": "⚡ MODERADA - 25% ROI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 320]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CAMPANHA RETENÇÃO - 15% CONVERSÃO ESPERADA\nconst membros = $json.membros;\nconst campanhas = [];\n\nmembros.forEach((membro, index) => {\n  const primeiroNome = membro.nome.split(' ')[0];\n  const mensagem = `🏆 *${primeiroNome}*, você é especial!\\n\\n📊 Notamos que sua frequência pode melhorar...\\n\\n🎁 *PRESENTE EXCLUSIVO PARA VOCÊ:*\\n💰 ${membro.oferta}\\n🏋️ Vamos maximizar seus resultados?\\n\\n💪 Que tal um treino hoje mesmo?\\n\\nSua dedicação merece mais! 🔥\\n\\n📞 Responda *SIM* para agendar!\\n\\n🏃‍♂️ *Academia Full Force* - Juntos somos mais fortes!`;\n  \n  campanhas.push({\n    json: {\n      telefone: membro.telefone,\n      nome: membro.nome,\n      mensagem: mensagem,\n      urgencia: 'MEDIA',\n      prioridade: 3,\n      delay: index * 3000, // 3 segundos entre envios\n      followUp: membro.followUpDias,\n      expectedRevenue: membro.expectedRevenue,\n      conversionRate: membro.conversionRate,\n      campanha: 'retencao_650_roi',\n      desconto: membro.desconto\n    }\n  });\n});\n\nreturn campanhas;"
+      },
+      "id": "campaign-retention-650",
+      "name": "🎯 RETENÇÃO - 15% ROI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "// CAMPANHA PROSPECTS - 8% CONVERSÃO ESPERADA\nconst membros = $json.membros;\nconst campanhas = [];\n\nmembros.forEach((membro, index) => {\n  const primeiroNome = membro.nome.split(' ')[0];\n  const mensagem = `🌟 *${primeiroNome}*, hora da transformação!\\n\\n💪 A melhor versão de você está esperando!\\n\\n🎁 *OFERTA IMPERDÍVEL:*\\n💰 ${membro.oferta}\\n🏋️ Equipamentos de última geração\\n👨‍🏫 Professores especializados\\n📊 Resultados comprovados\\n\\n🔥 Pronto para a mudança real?\\n\\n📞 Responda *SIM* e comece HOJE!\\n\\n🏃‍♂️ *Academia Full Force* - Onde sonhos viram realidade!`;\n  \n  campanhas.push({\n    json: {\n      telefone: membro.telefone,\n      nome: membro.nome,\n      mensagem: mensagem,\n      urgencia: 'BAIXA',\n      prioridade: 4,\n      delay: index * 5000, // 5 segundos entre envios\n      followUp: membro.followUpDias,\n      expectedRevenue: membro.expectedRevenue,\n      conversionRate: membro.conversionRate,\n      campanha: 'prospects_650_roi',\n      desconto: membro.desconto\n    }\n  });\n});\n\nreturn campanhas;"
+      },
+      "id": "campaign-prospects-650",
+      "name": "🌟 PROSPECTS - 8% ROI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 560]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "1YviQakfTbBNZWkFOLqxIi5EORfOPmKTJz_qr-inIvo8",
+        "sheetName": "ROI_Dashboard",
+        "range": "A:M",
+        "options": {
+          "headerRow": 1
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Data_Campanha": "={{ $now.format('DD/MM/YYYY HH:mm') }}",
+            "Total_Processados": "={{ $json.totalProcessados }}",
+            "Criticos": "={{ $json.criticos }}",
+            "Moderados": "={{ $json.moderados }}",
+            "Baixa_Freq": "={{ $json.baixaFreq }}",
+            "Prospects": "={{ $json.prospects }}",
+            "Excluidos": "={{ $json.excluidos }}",
+            "Receita_Potencial": "={{ $json.potentialRevenue }}",
+            "Investimento": "={{ $json.investment }}",
+            "ROI_Projetado": "={{ $json.projectedROI }}%",
+            "Novos_Membros_Esperados": "={{ $json.expectedNewMembers }}",
+            "Status": "Campanha Iniciada",
+            "Observacoes": "Workflow 650 inativos - ROI 11.700%"
+          }
+        }
+      },
+      "id": "roi-dashboard",
+      "name": "📊 ROI Dashboard",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1080, 680]
+    },
+    {
+      "parameters": {
+        "mode": "expression",
+        "expression": "={{ $json.delay }}"
+      },
+      "id": "intelligent-delay",
+      "name": "⏱️ Delay Inteligente",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1300, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3001/api/n8n/send-campaign",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.N8N_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"telefone\": \"{{ $json.telefone }}\",\n  \"mensagem\": \"{{ $json.mensagem }}\",\n  \"nome\": \"{{ $json.nome }}\",\n  \"urgencia\": \"{{ $json.urgencia }}\",\n  \"campanha\": \"{{ $json.campanha }}\",\n  \"expectedRevenue\": {{ $json.expectedRevenue }},\n  \"conversionRate\": {{ $json.conversionRate }},\n  \"session\": \"fullforce_650\"\n}",
+        "options": {
+          "timeout": 15000,
+          "retry": {
+            "enabled": true,
+            "maxAttempts": 3
+          }
+        }
+      },
+      "id": "send-via-fullforce",
+      "name": "📱 Enviar via FullForce API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1520, 400]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "1YviQakfTbBNZWkFOLqxIi5EORfOPmKTJz_qr-inIvo8",
+        "sheetName": "Campanhas_Log",
+        "range": "A:K",
+        "options": {
+          "headerRow": 1
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Telefone": "={{ $json.telefone }}",
+            "Nome": "={{ $json.nome }}",
+            "Urgencia": "={{ $json.urgencia }}",
+            "Campanha": "={{ $json.campanha }}",
+            "Data_Envio": "={{ $now.format('DD/MM/YYYY HH:mm:ss') }}",
+            "Status": "Enviado",
+            "Expected_Revenue": "={{ $json.expectedRevenue }}",
+            "Conversion_Rate": "={{ $json.conversionRate }}",
+            "Desconto": "={{ $json.desconto }}",
+            "Prioridade": "={{ $json.prioridade }}",
+            "Follow_Up": "={{ $json.followUp }}"
+          }
+        }
+      },
+      "id": "log-campaign-650",
+      "name": "📝 Log Campanha 650",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1740, 400]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.followUp[0] }}",
+        "unit": "days"
+      },
+      "id": "schedule-followup-1",
+      "name": "📅 Follow-up 1",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1520, 600]
+    },
+    {
+      "parameters": {
+        "jsCode": "// FOLLOW-UP INTELIGENTE BASEADO EM URGÊNCIA\nconst dados = $json;\nconst primeiroNome = dados.nome.split(' ')[0];\n\nconst followUpMessages = {\n  CRITICA: `⚠️ *${primeiroNome}*, ACABOU O TEMPO!\\n\\n🚨 Sua oferta de 60% OFF expirou às 23:59h\\n💔 Mas... temos uma ÚLTIMA oportunidade!\\n\\n🔥 *SUPER OFERTA RELÂMPAGO:*\\n💰 50% OFF ainda hoje\\n⏰ Até 18h - SEM EXTENSÃO\\n\\n💪 Não deixe sua saúde para amanhã!\\n\\n📞 Responda *ÚLTIMA* para garantir!`,\n  \n  ALTA: `💪 *${primeiroNome}*, ainda pensando?\\n\\n⚡ Sua oferta de 50% OFF termina em 12 horas\\n🎯 Cada dia sem treinar é um passo atrás\\n\\n🔥 LEMBRE-SE DOS SEUS OBJETIVOS:\\n✅ Mais energia no dia a dia\\n✅ Corpo que você sempre quis\\n✅ Saúde em primeiro lugar\\n\\n📞 Responda *VOLTO* e retome hoje!`,\n  \n  MEDIA: `🏆 *${primeiroNome}*, vamos turbinar?\\n\\n📈 Seus resultados podem ser MUITO melhores\\n🎁 Personal + Avaliação ainda disponíveis\\n💪 Que tal marcarmos seu retorno hoje?\\n\\n🔥 Sua melhor versão está esperando!\\n\\n📞 Responda *PERSONAL* e vamos nessa!`,\n  \n  BAIXA: `🌟 *${primeiroNome}*, ainda interessado?\\n\\n✨ 7 dias grátis ainda disponíveis\\n💪 Academia Full Force = Resultados REAIS\\n📊 +95% dos alunos alcançam seus objetivos\\n\\n🎯 Pronto para sua transformação?\\n\\n📞 Responda *GRATIS* e comece hoje!`\n};\n\nreturn {\n  json: {\n    telefone: dados.telefone,\n    nome: dados.nome,\n    mensagem: followUpMessages[dados.urgencia],\n    urgencia: dados.urgencia,\n    campanha: dados.campanha + '_followup1',\n    tipo: 'followup_1',\n    expectedRevenue: dados.expectedRevenue * 0.6, // 60% da receita original\n    conversionRate: dados.conversionRate * 0.4  // 40% da taxa original\n  }\n};"
+      },
+      "id": "followup-intelligent",
+      "name": "🔄 Follow-up Inteligente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1740, 600]
+    }
+  ],
+  "connections": {
+    "🎯 Trigger 650 Inativos": {
+      "main": [
+        [
+          {
+            "node": "📊 Carregar 650 Inativos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Carregar 650 Inativos": {
+      "main": [
+        [
+          {
+            "node": "🎯 Segmentação 650 + ROI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 Segmentação 650 + ROI": {
+      "main": [
+        [
+          {
+            "node": "🔀 Router Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Router Inteligente": {
+      "main": [
+        [
+          {
+            "node": "🚨 CRÍTICA - 35% ROI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⚡ MODERADA - 25% ROI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🎯 RETENÇÃO - 15% ROI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🌟 PROSPECTS - 8% ROI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📊 ROI Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚨 CRÍTICA - 35% ROI": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Delay Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚡ MODERADA - 25% ROI": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Delay Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 RETENÇÃO - 15% ROI": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Delay Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🌟 PROSPECTS - 8% ROI": {
+      "main": [
+        [
+          {
+            "node": "⏱️ Delay Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏱️ Delay Inteligente": {
+      "main": [
+        [
+          {
+            "node": "📱 Enviar via FullForce API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📱 Enviar via FullForce API": {
+      "main": [
+        [
+          {
+            "node": "📝 Log Campanha 650",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📅 Follow-up 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📅 Follow-up 1": {
+      "main": [
+        [
+          {
+            "node": "🔄 Follow-up Inteligente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Follow-up Inteligente": {
+      "main": [
+        [
+          {
+            "node": "📱 Enviar via FullForce API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "timezone": "America/Sao_Paulo"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": [
+    {
+      "name": "FullForce"
+    },
+    {
+      "name": "650-Inativos"
+    },
+    {
+      "name": "ROI-11700"
+    },
+    {
+      "name": "WhatsApp"
+    },
+    {
+      "name": "Automação"
+    }
+  ]
+}

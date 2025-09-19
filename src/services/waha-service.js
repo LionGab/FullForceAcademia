@@ -4,9 +4,9 @@ const pino = require('pino');
 class WAHAService {
     constructor(databaseService) {
         this.databaseService = databaseService;
-        this.baseURL = process.env.WAHA_API_URL || 'http://localhost:3000';
-        this.apiKey = process.env.WAHA_API_KEY || 'academia_secure_key_2024';
-        this.sessionName = 'academia-session';
+        this.baseURL = process.env.WAHA_API_URL || process.env.RAILWAY_STATIC_URL || 'http://localhost:3000';
+        this.apiKey = process.env.WAHA_API_KEY || 'academia_secure_key_2024_railway';
+        this.sessionName = process.env.ACADEMIA_SESSION_NAME || 'fullforce-session';
 
         this.logger = pino({
             level: process.env.LOG_LEVEL || 'info',
@@ -67,8 +67,9 @@ class WAHAService {
                 config: {
                     webhooks: [
                         {
-                            url: process.env.WEBHOOK_URL || 'http://localhost:3001/webhook/waha',
-                            events: ['message', 'session.status', 'session.upsert']
+                            url: process.env.WEBHOOK_URL || process.env.RAILWAY_STATIC_URL + '/webhook/waha' || 'http://localhost:4002/webhook/waha',
+                            events: ['message', 'session.status', 'session.upsert'],
+                            retries: process.env.WAHA_WEBHOOK_RETRIES || 3
                         }
                     ]
                 }
@@ -127,32 +128,47 @@ class WAHAService {
     }
 
     // Message operations
-    async sendMessage(chatId, message) {
+    async sendMessage(chatId, message, options = {}) {
         try {
+            // Format phone number if needed
+            const formattedChatId = chatId.includes('@c.us') ? chatId : this.formatPhoneNumber(chatId);
+
             const payload = {
-                chatId: chatId,
+                chatId: formattedChatId,
                 text: message
             };
 
             const response = await this.api.post(
-                `/api/sessions/${this.sessionName}/chats/${chatId}/messages/text`,
+                `/api/sessions/${this.sessionName}/chats/${formattedChatId}/messages/text`,
                 payload
             );
 
-            this.logger.info(`✅ Message sent via WAHA to ${chatId}`);
+            this.logger.info(`✅ Message sent via WAHA to ${formattedChatId}`);
 
-            // Log to database
-            await this.databaseService.saveMessage({
-                phone: chatId.replace('@c.us', ''),
-                message_text: message,
-                direction: 'outbound',
-                message_type: 'text'
-            });
+            // Log to database if service is available
+            if (this.databaseService) {
+                await this.databaseService.saveMessage({
+                    phone: formattedChatId.replace('@c.us', ''),
+                    message_text: message,
+                    direction: 'outbound',
+                    message_type: 'text',
+                    campaign_id: options.campaignId || null
+                });
+            }
 
-            return response.data;
+            return {
+                success: true,
+                messageId: response.data.id || response.data.messageId,
+                chatId: formattedChatId,
+                data: response.data
+            };
         } catch (error) {
             this.logger.error('❌ Failed to send message via WAHA:', error.message);
-            throw error;
+            return {
+                success: false,
+                error: error.message,
+                chatId: chatId
+            };
         }
     }
 
@@ -388,12 +404,24 @@ class WAHAService {
     formatPhoneNumber(phone) {
         // Remove any formatting and ensure it has the @c.us suffix for WAHA
         const cleanPhone = phone.replace(/\D/g, '');
+        // Ensure Brazilian phone format for WAHA
+        if (cleanPhone.length === 11 && !cleanPhone.startsWith('55')) {
+            return `55${cleanPhone}@c.us`;
+        }
         return `${cleanPhone}@c.us`;
     }
 
     async initialize() {
         try {
             this.logger.info('🚀 Initializing WAHA service...');
+            this.logger.info(`🌐 WAHA API URL: ${this.baseURL}`);
+            this.logger.info(`📱 Session Name: ${this.sessionName}`);
+
+            // Health check first
+            const health = await this.healthCheck();
+            if (!health.waha) {
+                throw new Error('WAHA API não está disponível');
+            }
 
             // Check if session exists
             const sessionStatus = await this.getSessionStatus();

@@ -15,7 +15,7 @@
     {
       "parameters": {
         "operation": "read",
-        "documentId": "1BvQhCgZJqL9T3XrM4NfP8QwHk6yS9cA2vD5eE8fF0gG",
+        "documentId": "1YviQakfTbBNZWkFOLqxIi5EORfOPmKTJz_qr-inIvo8",
         "sheetName": "Alunos",
         "range": "A:H",
         "options": {
@@ -149,7 +149,7 @@
     {
       "parameters": {
         "operation": "append",
-        "documentId": "1BvQhCgZJqL9T3XrM4NfP8QwHk6yS9cA2vD5eE8fF0gG",
+        "documentId": "1YviQakfTbBNZWkFOLqxIi5EORfOPmKTJz_qr-inIvo8",
         "sheetName": "Campanhas",
         "range": "A:G",
         "options": {

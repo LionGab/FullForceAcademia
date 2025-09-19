@@ -48,9 +48,31 @@ jspm_packages/
 # dotenv environment variable files
 .env
 
+# Database
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# WhatsApp Session Data (additional)
+auth_info_baileys/
+baileys_auth/
+baileys_auth_info/
+
+# Processed data and reports
+processed-data/
+csv-data/
+validation_report.txt
+
 # Backup files
 backup/
+backups/
 *.backup
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
 
 # OS generated files
 .DS_Store
@@ -60,6 +82,7 @@ backup/
 .Trashes
 ehthumbs.db
 Thumbs.db
+Desktop.ini
 
 # IDE files
 .vscode/
@@ -72,7 +95,16 @@ Thumbs.db
 google-credentials.json
 credentials.json
 token.json
+config/google-service-account-real.json
+
+# Railway deployment
+.railway/
+
+# Redis
+dump.rdb
 
 # Temporary files
 tmp/
 temp/
+*.tmp
+*.temp

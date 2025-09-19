@@ -1,0 +1,24 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile.railway"
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "always"
+
+[env]
+WAHA_API_KEY = "academia_secure_key_2024_railway"
+WAHA_LOG_LEVEL = "info"
+WHATSAPP_DEFAULT_ENGINE = "WEBJS"
+WHATSAPP_RESTART_ALL_SESSIONS = "true"
+WHATSAPP_START_SESSION = "default"
+WAHA_SESSIONS_START_ON_STARTUP = "true"
+WAHA_SESSIONS_STOP_ON_LOGOUT = "false"
+WAHA_FILES_FOLDER = "/app/files"
+WAHA_STORAGE_TYPE = "local"
+WAHA_PROXY_ENABLED = "false"
+WAHA_MAX_SESSIONS = "50"
+WAHA_API_KEY_HEADER = "X-Api-Key"
+WAHA_CORS_ENABLED = "true"
+WAHA_DB_TYPE = "memory"

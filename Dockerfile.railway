@@ -1,0 +1,24 @@
+# Dockerfile for WAHA deployment on Railway
+FROM devlikeapro/waha:latest
+
+# Set environment variables
+ENV WAHA_API_KEY=academia_secure_key_2024_railway
+ENV WAHA_LOG_LEVEL=info
+ENV WAHA_LOG_FORMAT=json
+ENV WHATSAPP_DEFAULT_ENGINE=WEBJS
+ENV WHATSAPP_RESTART_ALL_SESSIONS=true
+ENV WHATSAPP_START_SESSION=default
+ENV WAHA_SESSIONS_START_ON_STARTUP=true
+ENV WAHA_SESSIONS_STOP_ON_LOGOUT=false
+ENV WAHA_FILES_FOLDER=/app/files
+ENV WAHA_STORAGE_TYPE=local
+ENV WAHA_PROXY_ENABLED=false
+ENV WAHA_MAX_SESSIONS=50
+ENV WAHA_API_KEY_HEADER=X-Api-Key
+ENV WAHA_CORS_ENABLED=true
+ENV WAHA_DB_TYPE=memory
+
+# Expose port
+EXPOSE 3000
+
+# The image already has the WAHA entrypoint configured

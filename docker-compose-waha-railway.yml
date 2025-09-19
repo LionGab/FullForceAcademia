@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: academia-waha-railway
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      # WAHA Configuration
+      WAHA_LOG_LEVEL: info
+      WAHA_LOG_FORMAT: json
+
+      # WhatsApp Configuration
+      WHATSAPP_DEFAULT_ENGINE: WEBJS
+      WHATSAPP_RESTART_ALL_SESSIONS: true
+      WHATSAPP_START_SESSION: default
+
+      # Webhook Configuration
+      WAHA_WEBHOOK_URL: ${WEBHOOK_URL}
+      WAHA_WEBHOOK_EVENTS: message,session.status
+      WAHA_WEBHOOK_RETRIES: 3
+
+      # Security Configuration
+      WAHA_API_KEY: ${WAHA_API_KEY}
+      WAHA_API_KEY_HEADER: X-Api-Key
+
+      # Database Configuration (Optional)
+      WAHA_DB_TYPE: memory
+
+      # File Storage Configuration
+      WAHA_FILES_FOLDER: /app/files
+
+      # Session Configuration
+      WAHA_SESSIONS_START_ON_STARTUP: true
+      WAHA_SESSIONS_STOP_ON_LOGOUT: false
+
+      # Performance Configuration
+      WAHA_PROXY_ENABLED: false
+
+    volumes:
+      - waha_data:/app/.wwebjs_auth
+      - waha_files:/app/files
+      - waha_logs:/app/logs
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    labels:
+      - "railway.service.name=waha"
+      - "railway.service.type=web"
+      - "railway.service.health-check.enabled=true"
+      - "railway.service.health-check.path=/api/health"
+
+volumes:
+  waha_data:
+    driver: local
+  waha_files:
+    driver: local
+  waha_logs:
+    driver: local
+
+networks:
+  default:
+    name: academia-waha-network

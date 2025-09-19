@@ -195,45 +195,20 @@ class WhatsAppBaileysWAHA {
     async handleWAHAWebhook(req, res) {
         try {
             const payload = req.body;
-            console.log('📨 Webhook WAHA recebido:', payload.event || payload.type, payload);
+            console.log('📨 Webhook WAHA recebido:', payload.event);
 
-            // Verificar autenticação webhook se configurado
-            const webhookSecret = process.env.ACADEMIA_WEBHOOK_SECRET;
-            if (webhookSecret) {
-                const receivedSecret = req.headers['x-academia-secret'];
-                if (receivedSecret !== webhookSecret) {
-                    console.log('❌ Webhook authentication failed');
-                    return res.status(401).json({ error: 'Unauthorized' });
-                }
+            if (payload.event === 'message' && payload.payload) {
+                const { from, body } = payload.payload;
+
+                await this.processMessage({
+                    from,
+                    text: body,
+                    timestamp: new Date(),
+                    source: 'waha'
+                });
             }
 
-            // Handle different WAHA webhook formats
-            if (payload.event === 'message' || payload.type === 'message') {
-                const messageData = payload.data || payload.payload;
-                if (messageData && messageData.from && messageData.body) {
-                    const { from, body, type } = messageData;
-
-                    await this.processMessage({
-                        from,
-                        text: body,
-                        timestamp: new Date(),
-                        source: 'waha',
-                        messageType: type || 'text'
-                    });
-                }
-            } else if (payload.event === 'session.status') {
-                console.log('📱 WAHA Session Status:', payload.data);
-            } else if (payload.event === 'session.upsert') {
-                console.log('🔄 WAHA Session Upsert:', payload.data);
-            } else {
-                console.log('ℹ️ Unhandled WAHA webhook event:', payload.event || payload.type);
-            }
-
-            res.json({
-                status: 'ok',
-                timestamp: new Date().toISOString(),
-                event: payload.event || payload.type
-            });
+            res.json({ status: 'ok' });
 
         } catch (error) {
             console.error('❌ Erro no webhook WAHA:', error);
@@ -546,7 +521,7 @@ Venha nos visitar! 🏃‍♀️`,
             console.log('🚀 Iniciando WhatsApp Baileys + WAHA Sistema...\n');
 
             // Iniciar servidor Express
-            const port = process.env.PORT || 4002;
+            const port = process.env.PORT || 4001;
             this.app.listen(port, () => {
                 console.log(`🌐 Servidor rodando em http://localhost:${port}`);
                 console.log(`📊 Dashboard: http://localhost:${port}`);

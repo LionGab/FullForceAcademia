@@ -56,7 +56,7 @@
     {
       "parameters": {
         "operation": "appendOrUpdate",
-        "documentId": "1BvQhCgZJqL9T3XrM4NfP8QwHk6yS9cA2vD5eE8fF0gG",
+        "documentId": "1YviQakfTbBNZWkFOLqxIi5EORfOPmKTJz_qr-inIvo8",
         "sheetName": "Conversas",
         "range": "A:H",
         "keyRowIndex": 2,
@@ -180,7 +180,7 @@
     {
       "parameters": {
         "operation": "append",
-        "documentId": "1BvQhCgZJqL9T3XrM4NfP8QwHk6yS9cA2vD5eE8fF0gG",
+        "documentId": "1YviQakfTbBNZWkFOLqxIi5EORfOPmKTJz_qr-inIvo8",
         "sheetName": "Respostas_Enviadas",
         "range": "A:F",
         "options": {

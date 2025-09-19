@@ -1,0 +1,26 @@
+# WAHA (WhatsApp HTTP API) Dockerfile for Railway Deployment
+FROM devlikeapro/waha:latest
+
+# Set working directory
+WORKDIR /app
+
+# Create necessary directories for data persistence
+RUN mkdir -p /app/.wwebjs_auth /app/files /app/logs
+
+# Set environment variables for Railway
+ENV PORT=3000
+ENV NODE_ENV=production
+ENV WAHA_LOG_LEVEL=info
+ENV WAHA_LOG_FORMAT=json
+ENV WHATSAPP_DEFAULT_ENGINE=WEBJS
+ENV WHATSAPP_RESTART_ALL_SESSIONS=true
+
+# Expose port (Railway will override this)
+EXPOSE $PORT
+
+# Health check for Railway
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:$PORT/api/health || exit 1
+
+# Start WAHA server
+CMD ["npm", "start"]
