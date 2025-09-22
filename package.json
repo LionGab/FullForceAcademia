@@ -49,7 +49,20 @@
     "waha:campaign": "node scripts/waha-campaign-650.js",
     "waha:campaign:test": "node scripts/waha-campaign-650.js --test",
     "waha:campaign:dry": "node scripts/waha-campaign-650.js --dry-run",
-    "waha:help": "node scripts/waha-campaign-650.js --help"
+    "waha:help": "node scripts/waha-campaign-650.js --help",
+    "integration:setup": "node scripts/setup-google-sheets-integration.js setup",
+    "integration:test": "node scripts/setup-google-sheets-integration.js test",
+    "integration:validate": "node scripts/setup-google-sheets-integration.js validate",
+    "integration:start": "node scripts/google-sheets-n8n-integration.js start",
+    "integration:start:force": "node scripts/google-sheets-n8n-integration.js start --force",
+    "integration:verify": "node scripts/google-sheets-n8n-integration.js verify",
+    "sheets:manual": "curl -X POST https://lionalpha.app.n8n.cloud/webhook/google-sheets-manual-trigger -H 'Content-Type: application/json' -d '{\"triggerSource\":\"manual\",\"requestedBy\":\"user\"}'",
+    "sheets:test": "node scripts/google-sheets-n8n-integration.js test",
+    "deploy": "node deploy.js",
+    "deploy:auto": "node scripts/automated-token-retrieval.js",
+    "deploy:interactive": "node scripts/interactive-deployment.js",
+    "deploy:manual": "node scripts/n8n-auto-deploy.js",
+    "deploy:one-click": "node scripts/one-click-deployment.js"
   },
   "keywords": [
     "whatsapp",
@@ -78,6 +91,7 @@
     "pg": "^8.11.3",
     "pino": "^8.21.0",
     "pino-pretty": "^11.3.0",
+    "playwright": "^1.55.0",
     "qrcode-terminal": "^0.12.0",
     "redis": "^4.6.10",
     "xlsx": "^0.18.5"

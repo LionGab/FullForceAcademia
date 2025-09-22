@@ -1,0 +1,175 @@
+{
+  "name": "FullForce Academia - Google Sheets Integration Configuration",
+  "version": "2.0",
+  "description": "Google Sheets integration for N8N WhatsApp automation with inactive users data",
+  "created": "2025-09-22",
+  "
+
+  "googleSheets": {
+    "spreadsheetId": "1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo",
+    "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo/edit?usp=sharing",
+    "serviceAccountPath": "./config/google-service-account.json",
+    "scopes": [
+      "https://www.googleapis.com/auth/spreadsheets.readonly",
+      "https://www.googleapis.com/auth/drive.readonly"
+    ]
+  },
+
+  "sheets": {
+    "inactiveUsers": {
+      "name": "Usuarios_Inativos",
+      "range": "A:Z",
+      "headerRow": 1,
+      "columns": {
+        "nome": "A",
+        "telefone": "B",
+        "email": "C",
+        "dataRegistro": "D",
+        "ultimaAtividade": "E",
+        "diasInativo": "F",
+        "segmento": "G",
+        "valorMensalidade": "H",
+        "historicoPagemento": "I",
+        "motivoInatividade": "J",
+        "tentativasContato": "K",
+        "status": "L",
+        "observacoes": "M"
+      }
+    },
+    "campaignResults": {
+      "name": "Resultados_Campanha",
+      "range": "A:Z",
+      "headerRow": 1,
+      "writeMode": true,
+      "columns": {
+        "campaignId": "A",
+        "userId": "B",
+        "telefone": "C",
+        "dataContato": "D",
+        "statusEnvio": "E",
+        "statusResposta": "F",
+        "conversao": "G",
+        "segmento": "H",
+        "roi": "I"
+      }
+    }
+  },
+
+  "n8nIntegration": {
+    "baseUrl": "https://lionalpha.app.n8n.cloud",
+    "webhooks": {
+      "googleSheetsData": "/webhook/google-sheets-data",
+      "campaignTrigger": "/webhook/campaign-650-trigger",
+      "resultUpdate": "/webhook/result-update"
+    },
+    "workflows": {
+      "googleSheetsReader": "google-sheets-inactive-users-reader",
+      "campaignMain": "campaign-650-main-workflow",
+      "resultTracker": "campaign-result-tracker"
+    }
+  },
+
+  "dataMapping": {
+    "userSegmentation": {
+      "CRITICA": {
+        "criteria": {
+          "diasInativo": {"min": 7, "max": 30},
+          "historicoPagemento": {"min": 6},
+          "valorMensalidade": {"min": 100}
+        },
+        "priority": 1,
+        "conversionRate": 0.35,
+        "delay": 0
+      },
+      "ALTA": {
+        "criteria": {
+          "diasInativo": {"min": 31, "max": 60},
+          "historicoPagemento": {"min": 3},
+          "valorMensalidade": {"min": 80}
+        },
+        "priority": 2,
+        "conversionRate": 0.25,
+        "delay": 3600000
+      },
+      "MEDIA": {
+        "criteria": {
+          "diasInativo": {"min": 61, "max": 90},
+          "historicoPagemento": {"min": 1},
+          "valorMensalidade": {"min": 60}
+        },
+        "priority": 3,
+        "conversionRate": 0.15,
+        "delay": 7200000
+      },
+      "BAIXA": {
+        "criteria": {
+          "diasInativo": {"min": 91},
+          "historicoPagemento": {"min": 0},
+          "valorMensalidade": {"min": 0}
+        },
+        "priority": 4,
+        "conversionRate": 0.08,
+        "delay": 10800000
+      }
+    },
+    "whatsappMessages": {
+      "templates": {
+        "CRITICA": "Olá {nome}! Sentimos sua falta na academia. Que tal retomar seus treinos? Temos uma oferta especial para você!",
+        "ALTA": "Oi {nome}! Notamos que você não tem vindo à academia. Vamos conversar sobre como podemos te ajudar a voltar?",
+        "MEDIA": "Olá {nome}! Sua saúde e bem-estar são importantes. Que tal voltarmos aos treinos? Temos novidades para você!",
+        "BAIXA": "Oi {nome}! Lembra da academia? Temos promoções especiais para ex-alunos. Vamos conversar?"
+      },
+      "followUp": {
+        "delay": 259200000,
+        "maxAttempts": 3,
+        "escalation": true
+      }
+    }
+  },
+
+  "errorHandling": {
+    "retryAttempts": 3,
+    "retryDelay": 5000,
+    "timeouts": {
+      "sheetsRead": 30000,
+      "webhookCall": 15000,
+      "whatsappSend": 45000
+    },
+    "fallbacks": {
+      "enableMockData": true,
+      "enableOfflineMode": false,
+      "maxFailuresBeforeStop": 10
+    }
+  },
+
+  "logging": {
+    "level": "info",
+    "enableDebug": true,
+    "logToFile": true,
+    "logPath": "./logs/google-sheets-integration.log",
+    "enableWebhookLogs": true,
+    "enablePerformanceLogs": true
+  },
+
+  "security": {
+    "enableAuthValidation": true,
+    "allowedOrigins": [
+      "https://lionalpha.app.n8n.cloud",
+      "https://docs.google.com"
+    ],
+    "rateLimiting": {
+      "enabled": true,
+      "maxRequests": 100,
+      "windowMs": 900000
+    }
+  },
+
+  "performance": {
+    "batchSize": 50,
+    "readInterval": 300000,
+    "cacheEnabled": true,
+    "cacheTTL": 600000,
+    "parallelProcessing": true,
+    "maxConcurrency": 5
+  }
+}

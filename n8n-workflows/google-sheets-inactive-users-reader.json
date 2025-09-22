@@ -1,0 +1,305 @@
+{
+  "name": "FullForce Academia - Google Sheets Inactive Users Reader",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "google-sheets-manual-trigger",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "manual-webhook",
+      "name": "Manual Trigger Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 480],
+      "webhookId": "google-sheets-manual"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📊 GOOGLE SHEETS READER INITIALIZATION\n * Initialize the Google Sheets reading process\n */\n\nconst config = {\n  spreadsheetId: '1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo',\n  serviceAccountPath: './config/google-service-account.json',\n  targetSheet: 'Usuarios_Inativos',\n  expectedColumns: ['nome', 'telefone', 'email', 'dataRegistro', 'ultimaAtividade', 'diasInativo', 'segmento'],\n  readRange: 'A:M',\n  batchSize: 100\n};\n\nconst sessionId = `sheets_read_${Date.now()}`;\nconst triggerSource = $input.first().json.triggerSource || 'schedule';\n\nconst readerSession = {\n  id: sessionId,\n  startTime: new Date(),\n  status: 'initializing',\n  config,\n  triggerSource,\n  metadata: {\n    platform: 'n8n',\n    version: '2.0',\n    spreadsheetUrl: 'https://docs.google.com/spreadsheets/d/1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo/edit?usp=sharing'\n  }\n};\n\nconsole.log('📊 Google Sheets reader initialization started:', sessionId);\n\nreturn {\n  json: {\n    readerSession,\n    nextAction: 'authenticate_google',\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "reader-init",
+      "name": "Reader Initialization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 390]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "serviceAccountFile": "config/google-service-account.json",
+        "operation": "read",
+        "spreadsheetId": "1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo",
+        "sheetName": "Usuarios_Inativos",
+        "range": "A:M",
+        "options": {
+          "headerRow": true,
+          "usePathForKeyName": false
+        }
+      },
+      "id": "google-sheets-read",
+      "name": "Read Inactive Users Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [680, 390]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🔍 DATA VALIDATION AND PROCESSING\n * Validate and process Google Sheets data\n */\n\nconst readerSession = $input.first().json.readerSession;\nconst sheetsData = $input.all();\n\nif (!sheetsData || sheetsData.length === 0) {\n  throw new Error('No data received from Google Sheets');\n}\n\n// Process and validate data\nfunction processUserData(rawData) {\n  const processedUsers = [];\n  const errors = [];\n  \n  rawData.forEach((item, index) => {\n    try {\n      const user = {\n        nome: item.json.nome || '',\n        telefone: cleanPhoneNumber(item.json.telefone || ''),\n        email: item.json.email || '',\n        dataRegistro: item.json.dataRegistro || null,\n        ultimaAtividade: item.json.ultimaAtividade || null,\n        diasInativo: parseInt(item.json.diasInativo) || 0,\n        segmento: item.json.segmento || 'BAIXA',\n        valorMensalidade: parseFloat(item.json.valorMensalidade) || 0,\n        historicoPagemento: parseInt(item.json.historicoPagemento) || 0,\n        motivoInatividade: item.json.motivoInatividade || '',\n        tentativasContato: parseInt(item.json.tentativasContato) || 0,\n        status: item.json.status || 'INATIVO',\n        observacoes: item.json.observacoes || '',\n        rowIndex: index + 2, // +2 because of header row and 0-based index\n        processedAt: new Date().toISOString()\n      };\n      \n      // Validation\n      if (validateUser(user)) {\n        processedUsers.push(user);\n      } else {\n        errors.push({\n          row: index + 2,\n          user: user.nome || 'Nome não informado',\n          error: 'Dados inválidos ou incompletos'\n        });\n      }\n    } catch (error) {\n      errors.push({\n        row: index + 2,\n        error: error.message\n      });\n    }\n  });\n  \n  return { processedUsers, errors };\n}\n\nfunction cleanPhoneNumber(phone) {\n  if (!phone) return '';\n  // Remove all non-digits and ensure Brazilian format\n  const cleaned = phone.replace(/\\D/g, '');\n  if (cleaned.length === 11 && cleaned.startsWith('11')) {\n    return `55${cleaned}`;\n  } else if (cleaned.length === 10) {\n    return `5511${cleaned}`;\n  } else if (cleaned.length === 13 && cleaned.startsWith('55')) {\n    return cleaned;\n  }\n  return cleaned;\n}\n\nfunction validateUser(user) {\n  return user.nome && \n         user.telefone && \n         user.telefone.length >= 10 && \n         user.diasInativo >= 0;\n}\n\nconst result = processUserData(sheetsData);\nconst qualityScore = result.processedUsers.length / (result.processedUsers.length + result.errors.length);\n\nconst processedData = {\n  sessionId: readerSession.id,\n  totalRows: sheetsData.length,\n  validUsers: result.processedUsers.length,\n  errors: result.errors.length,\n  qualityScore: Math.round(qualityScore * 100),\n  users: result.processedUsers,\n  errorLog: result.errors,\n  processedAt: new Date().toISOString(),\n  spreadsheetInfo: {\n    id: readerSession.config.spreadsheetId,\n    sheet: readerSession.config.targetSheet,\n    range: readerSession.config.readRange\n  }\n};\n\nconsole.log(`🔍 Data processed: ${result.processedUsers.length} valid users, ${result.errors.length} errors`);\n\nif (result.processedUsers.length === 0) {\n  throw new Error('No valid users found in the spreadsheet');\n}\n\nreturn {\n  json: {\n    processedData,\n    nextAction: 'segment_users',\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "data-processor",
+      "name": "Data Validation and Processing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 390]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎯 INTELLIGENT USER SEGMENTATION\n * Segment users based on Google Sheets data and predefined criteria\n */\n\nconst data = $input.first().json.processedData;\nconst users = data.users;\n\n// Segmentation criteria from config\nconst segmentationCriteria = {\n  CRITICA: {\n    diasInativo: { min: 7, max: 30 },\n    historicoPagemento: { min: 6 },\n    valorMensalidade: { min: 100 },\n    priority: 1,\n    conversionRate: 0.35\n  },\n  ALTA: {\n    diasInativo: { min: 31, max: 60 },\n    historicoPagemento: { min: 3 },\n    valorMensalidade: { min: 80 },\n    priority: 2,\n    conversionRate: 0.25\n  },\n  MEDIA: {\n    diasInativo: { min: 61, max: 90 },\n    historicoPagemento: { min: 1 },\n    valorMensalidade: { min: 60 },\n    priority: 3,\n    conversionRate: 0.15\n  },\n  BAIXA: {\n    diasInativo: { min: 91 },\n    historicoPagemento: { min: 0 },\n    valorMensalidade: { min: 0 },\n    priority: 4,\n    conversionRate: 0.08\n  }\n};\n\nfunction segmentUser(user) {\n  // First check if user already has a segment assigned in the sheet\n  if (user.segmento && ['CRITICA', 'ALTA', 'MEDIA', 'BAIXA'].includes(user.segmento.toUpperCase())) {\n    return user.segmento.toUpperCase();\n  }\n  \n  // Calculate segment based on criteria\n  const criteria = {\n    diasInativo: user.diasInativo,\n    historicoPagemento: user.historicoPagemento,\n    valorMensalidade: user.valorMensalidade\n  };\n  \n  // Check CRITICA first (highest priority)\n  if (matchesCriteria(criteria, segmentationCriteria.CRITICA)) {\n    return 'CRITICA';\n  }\n  \n  // Check ALTA\n  if (matchesCriteria(criteria, segmentationCriteria.ALTA)) {\n    return 'ALTA';\n  }\n  \n  // Check MEDIA\n  if (matchesCriteria(criteria, segmentationCriteria.MEDIA)) {\n    return 'MEDIA';\n  }\n  \n  // Default to BAIXA\n  return 'BAIXA';\n}\n\nfunction matchesCriteria(user, criteria) {\n  // Check diasInativo range\n  if (criteria.diasInativo.max && \n      (user.diasInativo < criteria.diasInativo.min || user.diasInativo > criteria.diasInativo.max)) {\n    return false;\n  }\n  if (!criteria.diasInativo.max && user.diasInativo < criteria.diasInativo.min) {\n    return false;\n  }\n  \n  // Check minimum requirements\n  if (user.historicoPagemento < criteria.historicoPagemento.min) {\n    return false;\n  }\n  \n  if (user.valorMensalidade < criteria.valorMensalidade.min) {\n    return false;\n  }\n  \n  return true;\n}\n\n// Segment all users\nconst segments = {\n  CRITICA: [],\n  ALTA: [],\n  MEDIA: [],\n  BAIXA: []\n};\n\nusers.forEach(user => {\n  const segment = segmentUser(user);\n  const enhancedUser = {\n    ...user,\n    segmentoCalculado: segment,\n    priority: segmentationCriteria[segment].priority,\n    expectedConversion: segmentationCriteria[segment].conversionRate,\n    priorityScore: calculatePriorityScore(user, segment)\n  };\n  \n  segments[segment].push(enhancedUser);\n});\n\nfunction calculatePriorityScore(user, segment) {\n  let score = 0;\n  \n  // Base score by segment\n  const segmentScores = { CRITICA: 80, ALTA: 60, MEDIA: 40, BAIXA: 20 };\n  score += segmentScores[segment] || 20;\n  \n  // Bonus for recent activity\n  if (user.diasInativo < 14) score += 15;\n  else if (user.diasInativo < 30) score += 10;\n  \n  // Bonus for payment history\n  score += Math.min(user.historicoPagemento * 2, 20);\n  \n  // Bonus for higher monthly value\n  if (user.valorMensalidade > 150) score += 15;\n  else if (user.valorMensalidade > 100) score += 10;\n  \n  return Math.min(score, 100);\n}\n\n// Sort segments by priority score\nObject.keys(segments).forEach(segment => {\n  segments[segment].sort((a, b) => b.priorityScore - a.priorityScore);\n});\n\nconst segmentationResult = {\n  sessionId: data.sessionId,\n  totalUsers: users.length,\n  segments,\n  segmentSummary: {\n    CRITICA: segments.CRITICA.length,\n    ALTA: segments.ALTA.length,\n    MEDIA: segments.MEDIA.length,\n    BAIXA: segments.BAIXA.length\n  },\n  segmentationCriteria,\n  qualityMetrics: {\n    avgPriorityScore: {\n      CRITICA: segments.CRITICA.reduce((sum, u) => sum + u.priorityScore, 0) / Math.max(segments.CRITICA.length, 1),\n      ALTA: segments.ALTA.reduce((sum, u) => sum + u.priorityScore, 0) / Math.max(segments.ALTA.length, 1),\n      MEDIA: segments.MEDIA.reduce((sum, u) => sum + u.priorityScore, 0) / Math.max(segments.MEDIA.length, 1),\n      BAIXA: segments.BAIXA.reduce((sum, u) => sum + u.priorityScore, 0) / Math.max(segments.BAIXA.length, 1)\n    }\n  },\n  processedAt: new Date().toISOString()\n};\n\nconsole.log('🎯 User segmentation completed:', segmentationResult.segmentSummary);\n\nreturn {\n  json: {\n    segmentationResult,\n    originalData: data,\n    nextAction: 'trigger_campaign',\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "user-segmentation",
+      "name": "Intelligent User Segmentation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 390]
+    },
+    {
+      "parameters": {
+        "url": "https://lionalpha.app.n8n.cloud/webhook/campaign-650-trigger",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "trigger",
+              "value": "google_sheets_data"
+            },
+            {
+              "name": "sessionId",
+              "value": "={{$json.segmentationResult.sessionId}}"
+            },
+            {
+              "name": "segmentationResult",
+              "value": "={{$json.segmentationResult}}"
+            },
+            {
+              "name": "executedBy",
+              "value": "google_sheets_reader"
+            },
+            {
+              "name": "dataSource",
+              "value": "google_sheets"
+            },
+            {
+              "name": "spreadsheetId",
+              "value": "1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-N8N-Source",
+              "value": "google-sheets-reader"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 3
+          }
+        }
+      },
+      "id": "trigger-campaign",
+      "name": "Trigger Campaign 650",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1340, 390]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "serviceAccountFile": "config/google-service-account.json",
+        "operation": "append",
+        "spreadsheetId": "1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo",
+        "sheetName": "Resultados_Campanha",
+        "range": "A:I",
+        "options": {
+          "headerRow": true
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "campaignId": "={{$json.segmentationResult.sessionId}}",
+            "dataProcessamento": "={{$json.timestamp}}",
+            "totalUsuarios": "={{$json.segmentationResult.totalUsers}}",
+            "usuariosCritica": "={{$json.segmentationResult.segmentSummary.CRITICA}}",
+            "usuariosAlta": "={{$json.segmentationResult.segmentSummary.ALTA}}",
+            "usuariosMedia": "={{$json.segmentationResult.segmentSummary.MEDIA}}",
+            "usuariosBaixa": "={{$json.segmentationResult.segmentSummary.BAIXA}}",
+            "qualidadeDados": "={{$json.originalData.qualityScore}}%",
+            "status": "PROCESSADO"
+          }
+        }
+      },
+      "id": "log-to-sheets",
+      "name": "Log Results to Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1560, 390]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * ✅ GOOGLE SHEETS READER COMPLETION\n * Finalize the reading process and prepare summary\n */\n\nconst segmentationResult = $input.first().json.segmentationResult;\nconst originalData = $input.first().json.originalData;\n\nconst completionSummary = {\n  type: 'GOOGLE_SHEETS_READ_COMPLETE',\n  sessionId: segmentationResult.sessionId,\n  status: 'SUCCESS',\n  summary: {\n    spreadsheetId: '1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo',\n    totalRowsRead: originalData.totalRows,\n    validUsersProcessed: originalData.validUsers,\n    dataQuality: `${originalData.qualityScore}%`,\n    segmentation: segmentationResult.segmentSummary,\n    campaignTriggered: true\n  },\n  metrics: {\n    readTime: new Date().toISOString(),\n    processingDuration: 'Calculated in workflow',\n    errorRate: `${Math.round((originalData.errors / originalData.totalRows) * 100)}%`\n  },\n  nextSteps: [\n    'Campaign 650 workflow triggered',\n    'User segmentation completed',\n    'WhatsApp automation ready to start',\n    'ROI tracking enabled'\n  ]\n};\n\nconsole.log('✅ Google Sheets reading completed successfully');\nconsole.log('📊 Summary:', completionSummary.summary);\n\nreturn {\n  json: completionSummary\n};"
+      },
+      "id": "completion-summary",
+      "name": "Completion Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 390]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Reader Initialization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger Webhook": {
+      "main": [
+        [
+          {
+            "node": "Reader Initialization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reader Initialization": {
+      "main": [
+        [
+          {
+            "node": "Read Inactive Users Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Inactive Users Sheet": {
+      "main": [
+        [
+          {
+            "node": "Data Validation and Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data Validation and Processing": {
+      "main": [
+        [
+          {
+            "node": "Intelligent User Segmentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intelligent User Segmentation": {
+      "main": [
+        [
+          {
+            "node": "Trigger Campaign 650",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Campaign 650": {
+      "main": [
+        [
+          {
+            "node": "Log Results to Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Results to Sheets": {
+      "main": [
+        [
+          {
+            "node": "Completion Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "createdAt": "2025-09-22T00:00:00.000Z",
+      "updatedAt": "2025-09-22T00:00:00.000Z",
+      "id": "google-sheets-integration",
+      "name": "Google Sheets Integration"
+    },
+    {
+      "createdAt": "2025-09-22T00:00:00.000Z",
+      "updatedAt": "2025-09-22T00:00:00.000Z",
+      "id": "data-processing",
+      "name": "Data Processing"
+    },
+    {
+      "createdAt": "2025-09-22T00:00:00.000Z",
+      "updatedAt": "2025-09-22T00:00:00.000Z",
+      "id": "fullforce-academia",
+      "name": "FullForce Academia"
+    }
+  ],
+  "triggerCount": 2,
+  "updatedAt": "2025-09-22T00:00:00.000Z",
+  "versionId": "google-sheets-reader-v2.0"
+}

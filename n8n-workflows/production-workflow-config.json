@@ -1,0 +1,230 @@
+{
+  "name": "Reativação Inativos FullForce",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "serviceAccount": {
+          "type": "service_account",
+          "project_id": "fullforce-academia-2024",
+          "private_key_id": "key_id_here",
+          "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----",
+          "client_email": "fullforce@fullforce-academia-2024.iam.gserviceaccount.com",
+          "client_id": "123456789",
+          "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+          "token_uri": "https://oauth2.googleapis.com/token"
+        },
+        "spreadsheetId": "1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo",
+        "sheetName": "Inativos",
+        "range": "A:G"
+      },
+      "id": "google_sheets_read",
+      "name": "Google Sheets - Ler Inativos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "segment_critica",
+              "leftValue": "={{ $json.prioridade }}",
+              "rightValue": "CRITICA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "segment_alta",
+              "leftValue": "={{ $json.prioridade }}",
+              "rightValue": "ALTA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "segment_media",
+              "leftValue": "={{ $json.prioridade }}",
+              "rightValue": "MEDIA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "user_segmentation",
+      "name": "Segmentação Usuários",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst processedUsers = [];\n\nfor (const item of items) {\n  const user = item.json;\n  \n  // Validar dados obrigatórios\n  if (!user.telefone || !user.nome) {\n    continue;\n  }\n  \n  // Formatar telefone brasileiro\n  let phone = user.telefone.replace(/\\D/g, '');\n  if (phone.length === 11 && phone.startsWith('11')) {\n    phone = '55' + phone;\n  } else if (phone.length === 10) {\n    phone = '5511' + phone;\n  }\n  \n  // Definir mensagem personalizada por segmento\n  let message = '';\n  switch (user.prioridade) {\n    case 'CRITICA':\n      message = `Olá ${user.nome}! 💪 Sentimos sua falta na FullForce! Que tal voltar com 50% OFF? Oferta especial para você!`;\n      break;\n    case 'ALTA':\n      message = `Oi ${user.nome}! 🔥 A FullForce está com novidades incríveis! Volta pra treinar conosco com desconto especial!`;\n      break;\n    case 'MEDIA':\n      message = `${user.nome}, que tal retomar os treinos? 💚 Temos uma promoção especial esperando por você na FullForce!`;\n      break;\n    default:\n      message = `Olá ${user.nome}! A FullForce quer você de volta! Venha conhecer nossas novidades!`;\n  }\n  \n  processedUsers.push({\n    nome: user.nome,\n    telefone: phone,\n    prioridade: user.prioridade,\n    mensagem: message,\n    email: user.email || '',\n    ultima_atividade: user.ultima_atividade || '',\n    valor_gasto: user.valor_gasto || 0\n  });\n}\n\nreturn processedUsers.map(user => ({ json: user }));"
+      },
+      "id": "data_processing",
+      "name": "Processar Dados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://waha.lionalpha.app/api/sendText",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer ${WAHA_TOKEN}"
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "{\n  \"chatId\": \"{{ $json.telefone }}@c.us\",\n  \"text\": \"{{ $json.mensagem }}\",\n  \"session\": \"default\"\n}",
+        "options": {}
+      },
+      "id": "whatsapp_send",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        860,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst results = [];\n\nfor (const item of items) {\n  const response = item.json;\n  \n  results.push({\n    telefone: response.chatId?.replace('@c.us', '') || '',\n    status: response.sent ? 'enviado' : 'erro',\n    timestamp: new Date().toISOString(),\n    erro: response.error || null\n  });\n}\n\n// Estatísticas\nconst enviados = results.filter(r => r.status === 'enviado').length;\nconst erros = results.filter(r => r.status === 'erro').length;\nconst total = results.length;\n\nconsole.log(`Campanha finalizada: ${enviados}/${total} enviados, ${erros} erros`);\n\nreturn [{\n  json: {\n    resumo: {\n      total_processados: total,\n      enviados_sucesso: enviados,\n      erros: erros,\n      taxa_sucesso: ((enviados / total) * 100).toFixed(2) + '%',\n      timestamp: new Date().toISOString()\n    },\n    detalhes: results\n  }\n}];"
+      },
+      "id": "campaign_analytics",
+      "name": "Analytics Campanha",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "serviceAccount": {
+          "type": "service_account",
+          "project_id": "fullforce-academia-2024",
+          "private_key_id": "key_id_here",
+          "private_key": "-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----",
+          "client_email": "fullforce@fullforce-academia-2024.iam.gserviceaccount.com",
+          "client_id": "123456789",
+          "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+          "token_uri": "https://oauth2.googleapis.com/token"
+        },
+        "spreadsheetId": "1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo",
+        "sheetName": "Resultados",
+        "operation": "appendOrUpdate",
+        "columnToMatchOn": "telefone",
+        "valueInputMode": "raw",
+        "dataMode": "raw",
+        "rawData": "={{ $json.detalhes }}"
+      },
+      "id": "save_results",
+      "name": "Salvar Resultados",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1260,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Google Sheets - Ler Inativos": {
+      "main": [
+        [
+          {
+            "node": "Segmentação Usuários",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segmentação Usuários": {
+      "main": [
+        [
+          {
+            "node": "Processar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Processar Dados": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Analytics Campanha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analytics Campanha": {
+      "main": [
+        [
+          {
+            "node": "Salvar Resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    "whatsapp",
+    "reativacao",
+    "fullforce"
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-22T00:00:00.000Z",
+  "versionId": "1"
+}
