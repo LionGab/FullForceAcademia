@@ -1,0 +1,384 @@
+{
+  "name": "FullForce Academia - WhatsApp Automation Hub",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "whatsapp-webhook",
+      "name": "WhatsApp Webhook Receiver",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [260, 300],
+      "webhookId": "whatsapp-automation-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📱 WHATSAPP MESSAGE ROUTER\n * Route incoming messages and automation requests\n */\n\nconst payload = $input.first().json;\nconst messageType = payload.type || 'unknown';\n\n// Route different types of WhatsApp automation\nconst routing = {\n  message: {\n    action: 'process_incoming_message',\n    priority: 'high',\n    requiresResponse: true\n  },\n  campaign_send: {\n    action: 'send_campaign_message',\n    priority: 'normal',\n    requiresResponse: false\n  },\n  bulk_send: {\n    action: 'send_bulk_messages',\n    priority: 'normal',\n    requiresResponse: false\n  },\n  status_update: {\n    action: 'update_message_status',\n    priority: 'low',\n    requiresResponse: false\n  },\n  webhook_test: {\n    action: 'test_webhook',\n    priority: 'low',\n    requiresResponse: true\n  }\n};\n\nconst route = routing[messageType] || routing['unknown'];\n\nconst processedPayload = {\n  originalPayload: payload,\n  messageType,\n  routing: route,\n  timestamp: new Date().toISOString(),\n  processed: true\n};\n\nconsole.log(`📱 WhatsApp webhook received: ${messageType}`);\n\nreturn {\n  json: processedPayload\n};"
+      },
+      "id": "message-router",
+      "name": "Message Router",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-message-type",
+              "leftValue": "={{$json.messageType}}",
+              "rightValue": "message",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "incoming-message-check",
+      "name": "Incoming Message Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [700, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-campaign-send",
+              "leftValue": "={{$json.messageType}}",
+              "rightValue": "campaign_send",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "campaign-send-check",
+      "name": "Campaign Send Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [700, 400]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/whatsapp/process-incoming",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messageData",
+              "value": "={{$json.originalPayload}}"
+            },
+            {
+              "name": "routing",
+              "value": "={{$json.routing}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Webhook-Source",
+              "value": "n8n-automation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 2\n          }\n        }\n      },\n      \"id\": \"process-incoming\",\n      \"name\": \"Process Incoming Message\",\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"typeVersion\": 4.1,\n      \"position\": [920, 140]\n    },\n    {\n      \"parameters\": {\n        \"jsCode\": \"/**\\n * 🤖 AUTOMATED RESPONSE GENERATOR\\n * Generate intelligent responses based on message intent\\n */\\n\\nconst response = $input.first().json;\\nconst messageData = response.messageData;\\nconst intent = response.intent;\\n\\nfunction generateAutomatedResponse(intent, messageData) {\\n  const responses = {\\n    interest: {\\n      message: `🎉 Que ótimo! Vamos agendar sua volta?\\n\\n📞 Entre em contato:\\nWhatsApp: (65) 99999-9999\\n📍 Rua das Academias, 123 - Matupá\\n\\n💪 A Full Force te espera!`,\\n      shouldSend: true,\\n      priority: 'high'\\n    },\\n    information_request: {\\n      message: `📋 Informações Full Force Academia:\\n\\n💰 Planos a partir de R$ 89,90\\n⏰ Seg-Sex 6h-22h, Sáb 8h-18h\\n📍 Rua das Academias, 123 - Matupá\\n📞 (65) 99999-9999\\n\\n🎁 Oferta especial para ex-alunos!`,\\n      shouldSend: true,\\n      priority: 'normal'\\n    },\\n    opt_out: {\\n      message: `Entendido! Você foi removido da nossa lista.\\n\\nSe mudar de ideia, sempre será bem-vindo! 🤝`,\\n      shouldSend: true,\\n      priority: 'high',\\n      actions: ['add_to_opt_out_list']\\n    },\\n    question: {\\n      message: `🤔 Ótima pergunta!\\n\\nPara atendimento personalizado:\\n📞 WhatsApp: (65) 99999-9999\\n📧 contato@fullforceacademia.com\\n\\nNossa equipe esclarece todas as dúvidas! 😊`,\\n      shouldSend: true,\\n      priority: 'normal'\\n    },\\n    general: {\\n      message: `Olá! 👋\\n\\nObrigado pelo contato!\\n📞 WhatsApp: (65) 99999-9999\\n\\nEstamos aqui para ajudar! 💪`,\\n      shouldSend: true,\\n      priority: 'low'\\n    }\\n  };\\n\\n  return responses[intent] || responses.general;\\n}\\n\\nconst autoResponse = generateAutomatedResponse(intent, messageData);\\n\\nconst responseData = {\\n  from: messageData.from,\\n  originalMessage: messageData.text,\\n  intent,\\n  autoResponse,\\n  timestamp: new Date().toISOString(),\\n  campaignContext: {\\n    isExMember: true,\\n    segment: 'automated_response'\\n  }\\n};\\n\\nconsole.log(`🤖 Generated auto-response for intent: ${intent}`);\\n\\nreturn {\\n  json: responseData\\n};\"\n      },\n      \"id\": \"auto-response-generator\",\n      \"name\": \"Auto Response Generator\",\n      \"type\": \"n8n-nodes-base.code\",\n      \"typeVersion\": 2,\n      \"position\": [1140, 140]\n    },\n    {\n      \"parameters\": {\n        \"conditions\": {\n          \"options\": {\n            \"caseSensitive\": true,\n            \"leftValue\": \"\",\n            \"typeValidation\": \"strict\"\n          },\n          \"conditions\": [\n            {\n              \"id\": \"should-send-response\",\n              \"leftValue\": \"={{$json.autoResponse.shouldSend}}\",\n              \"rightValue\": true,\n              \"operator\": {\n                \"type\": \"boolean\",\n                \"operation\": \"equal\"\n              }\n            }\n          ],\n          \"combinator\": \"and\"\n        },\n        \"options\": {}\n      },\n      \"id\": \"should-respond-check\",\n      \"name\": \"Should Respond Check\",\n      \"type\": \"n8n-nodes-base.if\",\n      \"typeVersion\": 2,\n      \"position\": [1360, 140]\n    },\n    {\n      \"parameters\": {\n        \"url\": \"http://localhost:3001/api/whatsapp/send-message\",\n        \"sendBody\": true,\n        \"bodyParameters\": {\n          \"parameters\": [\n            {\n              \"name\": \"phoneNumber\",\n              \"value\": \"={{$json.from}}\"\n            },\n            {\n              \"name\": \"message\",\n              \"value\": \"={{$json.autoResponse.message}}\"\n            },\n            {\n              \"name\": \"options\",\n              \"value\": \"={{$json.campaignContext}}\"\n            }\n          ]\n        },\n        \"sendHeaders\": true,\n        \"headerParameters\": {\n          \"parameters\": [\n            {\n              \"name\": \"Authorization\",\n              \"value\": \"Bearer {{$env.ACADEMIA_API_TOKEN}}\"\n            },\n            {\n              \"name\": \"Content-Type\",\n              \"value\": \"application/json\"\n            },\n            {\n              \"name\": \"X-Message-Type\",\n              \"value\": \"automated_response\"\n            }\n          ]\n        },\n        \"options\": {\n          \"timeout\": 10000\n        }\n      },\n      \"id\": \"send-auto-response\",\n      \"name\": \"Send Auto Response\",\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"typeVersion\": 4.1,\n      \"position\": [1580, 100]\n    },\n    {\n      \"parameters\": {\n        \"url\": \"http://localhost:3001/api/whatsapp/send-campaign-message\",\n        \"sendBody\": true,\n        \"bodyParameters\": {\n          \"parameters\": [\n            {\n              \"name\": \"campaignData\",\n              \"value\": \"={{$json.originalPayload}}\"\n            },\n            {\n              \"name\": \"routing\",\n              \"value\": \"={{$json.routing}}\"\n            }\n          ]\n        },\n        \"sendHeaders\": true,\n        \"headerParameters\": {\n          \"parameters\": [\n            {\n              \"name\": \"Authorization\",\n              \"value\": \"Bearer {{$env.ACADEMIA_API_TOKEN}}\"\n            },\n            {\n              \"name\": \"Content-Type\",\n              \"value\": \"application/json\"\n            },\n            {\n              \"name\": \"X-Campaign-Source\",\n              \"value\": \"n8n-automation\"\n            }\n          ]\n        },\n        \"options\": {\n          \"timeout\": 30000,\n          \"retry\": {\n            \"enabled\": true,\n            \"maxTries\": 3\n          }\n        }\n      },\n      \"id\": \"send-campaign-message\",\n      \"name\": \"Send Campaign Message\",\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"typeVersion\": 4.1,\n      \"position\": [920, 360]\n    },\n    {\n      \"parameters\": {\n        \"jsCode\": \"/**\\n * 📊 WAHA CLOUD INTEGRATION\\n * Integrate with existing waha-cloud-service.js\\n */\\n\\nconst campaignResult = $input.first().json;\\n\\n// Process campaign message result\\nconst result = {\\n  messageId: campaignResult.messageId,\\n  status: campaignResult.success ? 'sent' : 'failed',\\n  phoneNumber: campaignResult.phoneNumber,\\n  campaignId: campaignResult.campaignId,\\n  segment: campaignResult.segment,\\n  timestamp: new Date().toISOString(),\\n  wahaIntegration: {\\n    platform: 'waha-cloud',\\n    via: 'n8n-webhook',\\n    processed: true\\n  }\\n};\\n\\n// Log successful integration\\nif (result.status === 'sent') {\\n  console.log(`📤 WAHA Cloud message sent via N8N: ${result.messageId}`);\\n} else {\\n  console.log(`❌ WAHA Cloud message failed via N8N: ${campaignResult.error}`);\\n}\\n\\n// Prepare for ROI tracking update\\nconst roiUpdate = {\\n  campaignId: result.campaignId,\\n  messagesSent: result.status === 'sent' ? 1 : 0,\\n  messagesError: result.status === 'failed' ? 1 : 0,\\n  segment: result.segment,\\n  timestamp: result.timestamp\\n};\\n\\nreturn {\\n  json: {\\n    campaignResult: result,\\n    roiUpdate,\\n    nextAction: 'update_campaign_metrics'\\n  }\\n};\"\n      },\n      \"id\": \"waha-integration\",\n      \"name\": \"WAHA Cloud Integration\",\n      \"type\": \"n8n-nodes-base.code\",\n      \"typeVersion\": 2,\n      \"position\": [1140, 360]\n    },\n    {\n      \"parameters\": {\n        \"url\": \"http://localhost:3001/api/campaigns/update-metrics\",\n        \"sendBody\": true,\n        \"bodyParameters\": {\n          \"parameters\": [\n            {\n              \"name\": \"roiUpdate\",\n              \"value\": \"={{$json.roiUpdate}}\"\n            },\n            {\n              \"name\": \"campaignResult\",\n              \"value\": \"={{$json.campaignResult}}\"\n            }\n          ]\n        },\n        \"sendHeaders\": true,\n        \"headerParameters\": {\n          \"parameters\": [\n            {\n              \"name\": \"Authorization\",\n              \"value\": \"Bearer {{$env.ACADEMIA_API_TOKEN}}\"\n            },\n            {\n              \"name\": \"Content-Type\",\n              \"value\": \"application/json\"\n            }\n          ]\n        },\n        \"options\": {\n          \"timeout\": 5000\n        }\n      },\n      \"id\": \"update-metrics\",\n      \"name\": \"Update Campaign Metrics\",\n      \"type\": \"n8n-nodes-base.httpRequest\",\n      \"typeVersion\": 4.1,\n      \"position\": [1360, 360]\n    },\n    {\n      \"parameters\": {\n        \"jsCode\": \"/**\\n * 📈 REAL-TIME ANALYTICS UPDATE\\n * Send analytics data to dashboard\\n */\\n\\nconst data = $input.first().json;\\n\\nconst analyticsPayload = {\\n  type: 'whatsapp_automation',\\n  timestamp: new Date().toISOString(),\\n  metrics: {\\n    messagesSent: data.messagesSent || 0,\\n    messagesError: data.messagesError || 0,\\n    campaignId: data.campaignId,\\n    segment: data.segment\\n  },\\n  integration: {\\n    platform: 'n8n',\\n    wahaCloud: true,\\n    realTime: true\\n  }\\n};\\n\\nconsole.log('📈 Sending real-time analytics update');\\n\\nreturn {\\n  json: analyticsPayload\\n};\"\n      },\n      \"id\": \"analytics-update\",\n      \"name\": \"Real-time Analytics\",\n      \"type\": \"n8n-nodes-base.code\",\n      \"typeVersion\": 2,\n      \"position\": [1580, 360]\n    }\n  ],\n  \"connections\": {\n    \"WhatsApp Webhook Receiver\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Message Router\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Message Router\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Incoming Message Check\",\n            \"type\": \"main\",\n            \"index\": 0\n          },\n          {\n            \"node\": \"Campaign Send Check\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Incoming Message Check\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Process Incoming Message\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Campaign Send Check\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Send Campaign Message\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Process Incoming Message\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Auto Response Generator\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Auto Response Generator\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Should Respond Check\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Should Respond Check\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Send Auto Response\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Send Campaign Message\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"WAHA Cloud Integration\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"WAHA Cloud Integration\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Update Campaign Metrics\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Update Campaign Metrics\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Real-time Analytics\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    }\n  },\n  \"pinData\": {},\n  \"settings\": {\n    \"executionOrder\": \"v1\"\n  },\n  \"staticData\": {},\n  \"tags\": [\n    {\n      \"createdAt\": \"2025-09-20T00:25:00.000Z\",\n      \"updatedAt\": \"2025-09-20T00:25:00.000Z\",\n      \"id\": \"whatsapp-automation\",\n      \"name\": \"WhatsApp Automation\"\n    },\n    {\n      \"createdAt\": \"2025-09-20T00:25:00.000Z\",\n      \"updatedAt\": \"2025-09-20T00:25:00.000Z\",\n      \"id\": \"waha-integration\",\n      \"name\": \"WAHA Integration\"\n    },\n    {\n      \"createdAt\": \"2025-09-20T00:25:00.000Z\",\n      \"updatedAt\": \"2025-09-20T00:25:00.000Z\",\n      \"id\": \"real-time-analytics\",\n      \"name\": \"Real-time Analytics\"\n    }\n  ],\n  \"triggerCount\": 1,\n  \"updatedAt\": \"2025-09-20T00:25:00.000Z\",\n  \"versionId\": \"whatsapp-automation-v2.0\"\n}"
+      },
+      "id": "send-auto-response",
+      "name": "Send Auto Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1580, 100]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/whatsapp/send-campaign-message",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "campaignData",
+              "value": "={{$json.originalPayload}}"
+            },
+            {
+              "name": "routing",
+              "value": "={{$json.routing}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Campaign-Source",
+              "value": "n8n-automation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 3
+          }
+        }
+      },
+      "id": "send-campaign-message",
+      "name": "Send Campaign Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [920, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📊 WAHA CLOUD INTEGRATION\n * Integrate with existing waha-cloud-service.js\n */\n\nconst campaignResult = $input.first().json;\n\n// Process campaign message result\nconst result = {\n  messageId: campaignResult.messageId,\n  status: campaignResult.success ? 'sent' : 'failed',\n  phoneNumber: campaignResult.phoneNumber,\n  campaignId: campaignResult.campaignId,\n  segment: campaignResult.segment,\n  timestamp: new Date().toISOString(),\n  wahaIntegration: {\n    platform: 'waha-cloud',\n    via: 'n8n-webhook',\n    processed: true\n  }\n};\n\n// Log successful integration\nif (result.status === 'sent') {\n  console.log(`📤 WAHA Cloud message sent via N8N: ${result.messageId}`);\n} else {\n  console.log(`❌ WAHA Cloud message failed via N8N: ${campaignResult.error}`);\n}\n\n// Prepare for ROI tracking update\nconst roiUpdate = {\n  campaignId: result.campaignId,\n  messagesSent: result.status === 'sent' ? 1 : 0,\n  messagesError: result.status === 'failed' ? 1 : 0,\n  segment: result.segment,\n  timestamp: result.timestamp\n};\n\nreturn {\n  json: {\n    campaignResult: result,\n    roiUpdate,\n    nextAction: 'update_campaign_metrics'\n  }\n};"
+      },
+      "id": "waha-integration",
+      "name": "WAHA Cloud Integration",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 360]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/campaigns/update-metrics",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "roiUpdate",
+              "value": "={{$json.roiUpdate}}"
+            },
+            {
+              "name": "campaignResult",
+              "value": "={{$json.campaignResult}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "update-metrics",
+      "name": "Update Campaign Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1360, 360]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📈 REAL-TIME ANALYTICS UPDATE\n * Send analytics data to dashboard\n */\n\nconst data = $input.first().json;\n\nconst analyticsPayload = {\n  type: 'whatsapp_automation',\n  timestamp: new Date().toISOString(),\n  metrics: {\n    messagesSent: data.messagesSent || 0,\n    messagesError: data.messagesError || 0,\n    campaignId: data.campaignId,\n    segment: data.segment\n  },\n  integration: {\n    platform: 'n8n',\n    wahaCloud: true,\n    realTime: true\n  }\n};\n\nconsole.log('📈 Sending real-time analytics update');\n\nreturn {\n  json: analyticsPayload\n};"
+      },
+      "id": "analytics-update",
+      "name": "Real-time Analytics",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 360]
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook Receiver": {
+      "main": [
+        [
+          {
+            "node": "Message Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message Router": {
+      "main": [
+        [
+          {
+            "node": "Incoming Message Check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Campaign Send Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Incoming Message Check": {
+      "main": [
+        [
+          {
+            "node": "Process Incoming Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign Send Check": {
+      "main": [
+        [
+          {
+            "node": "Send Campaign Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Incoming Message": {
+      "main": [
+        [
+          {
+            "node": "Auto Response Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auto Response Generator": {
+      "main": [
+        [
+          {
+            "node": "Should Respond Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Respond Check": {
+      "main": [
+        [
+          {
+            "node": "Send Auto Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Campaign Message": {
+      "main": [
+        [
+          {
+            "node": "WAHA Cloud Integration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WAHA Cloud Integration": {
+      "main": [
+        [
+          {
+            "node": "Update Campaign Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Campaign Metrics": {
+      "main": [
+        [
+          {
+            "node": "Real-time Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "createdAt": "2025-09-20T00:25:00.000Z",
+      "updatedAt": "2025-09-20T00:25:00.000Z",
+      "id": "whatsapp-automation",
+      "name": "WhatsApp Automation"
+    },
+    {
+      "createdAt": "2025-09-20T00:25:00.000Z",
+      "updatedAt": "2025-09-20T00:25:00.000Z",
+      "id": "waha-integration",
+      "name": "WAHA Integration"
+    },
+    {
+      "createdAt": "2025-09-20T00:25:00.000Z",
+      "updatedAt": "2025-09-20T00:25:00.000Z",
+      "id": "real-time-analytics",
+      "name": "Real-time Analytics"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-20T00:25:00.000Z",
+  "versionId": "whatsapp-automation-v2.0"
+}

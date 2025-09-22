@@ -1,0 +1,77 @@
+{
+  "executionInfo": {
+    "timestamp": "2025-09-22T12:04:24.309Z",
+    "arquivo": "todos_alunos.csv",
+    "processedAt": "2025-09-22T12:04:24.306Z"
+  },
+  "dataQuality": {
+    "totalLinhas": 38,
+    "alunosValidos": 38,
+    "alunosInvalidos": 0,
+    "taxaSucesso": "100.0%"
+  },
+  "segmentacao": {
+    "criticos": {
+      "quantidade": 38,
+      "percentual": "100.0%",
+      "descricao": "Mais de 90 dias sem atividade - URGENTE",
+      "oferta": "60% OFF - Oferta crítica",
+      "conversaoEsperada": "35%"
+    },
+    "moderados": {
+      "quantidade": 0,
+      "percentual": "0.0%",
+      "descricao": "60-90 dias sem atividade - ALTA prioridade",
+      "oferta": "50% OFF - Volta especial",
+      "conversaoEsperada": "25%"
+    },
+    "baixaFreq": {
+      "quantidade": 0,
+      "percentual": "0.0%",
+      "descricao": "30-60 dias ou baixa frequência - MÉDIA prioridade",
+      "oferta": "Personal GRÁTIS + Reavaliação",
+      "conversaoEsperada": "15%"
+    },
+    "prospects": {
+      "quantidade": 0,
+      "percentual": "0.0%",
+      "descricao": "Menos de 30 dias - Engajamento",
+      "oferta": "7 dias GRÁTIS + Avaliação",
+      "conversaoEsperada": "8%"
+    },
+    "excluidos": {
+      "quantidade": 0,
+      "motivos": [
+        "Telefone inválido",
+        "Dados incompletos"
+      ]
+    }
+  },
+  "projecaoROI": {
+    "investimento": "R$ 1500",
+    "receitaEsperada": "R$ 10366.02",
+    "roi": "591%",
+    "novosMembrosEsperados": 13,
+    "detalhamento": {
+      "criticos": "38 × 35% = 13 conversões",
+      "moderados": "0 × 25% = 0 conversões",
+      "baixaFreq": "0 × 15% = 0 conversões",
+      "prospects": "0 × 8% = 0 conversões"
+    }
+  },
+  "campanhaRecomendada": {
+    "prioridadeEnvio": [
+      "1. Críticos (60% OFF) - Urgência máxima",
+      "2. Moderados (50% OFF) - Alta prioridade",
+      "3. Baixa Freq (Benefícios) - Média prioridade",
+      "4. Prospects (Ofertas) - Baixa prioridade"
+    ],
+    "cronogramaEnvio": {
+      "lote1": "Críticos: 38 mensagens",
+      "lote2": "Moderados: 0 mensagens",
+      "lote3": "Baixa Freq: 0 mensagens",
+      "lote4": "Prospects: 0 mensagens"
+    },
+    "tempoEstimado": "1 horas"
+  }
+}

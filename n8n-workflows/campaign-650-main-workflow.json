@@ -1,0 +1,436 @@
+{
+  "name": "FullForce Academia - Campaign 650 Main Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "campaign-650-trigger",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "webhook-trigger",
+      "name": "Campaign 650 Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [260, 300],
+      "webhookId": "campaign-650-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎯 CAMPAIGN 650 INITIALIZATION\n * Load inactive users and prepare segmentation\n */\n\nconst campaignConfig = {\n  targetUsers: 650,\n  expectedROI: { min: 2250, max: 3750 },\n  segments: ['CRITICA', 'ALTA', 'MEDIA', 'BAIXA'],\n  batchSize: 50,\n  delayBetweenBatches: 30000\n};\n\n// Get webhook payload\nconst payload = $input.first().json;\n\n// Initialize campaign session\nconst campaignSession = {\n  id: `campaign_650_${Date.now()}`,\n  startTime: new Date(),\n  status: 'initializing',\n  config: campaignConfig,\n  triggerData: payload,\n  metadata: {\n    platform: 'n8n',\n    version: '2.0',\n    executedBy: payload.executedBy || 'system'\n  }\n};\n\n// Log campaign initialization\nconsole.log('🚀 Campaign 650 initialization started:', campaignSession.id);\n\nreturn {\n  json: {\n    campaignSession,\n    nextAction: 'load_inactive_users',\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "campaign-init",
+      "name": "Campaign Initialization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/users/inactive",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "650"
+            },
+            {
+              "name": "hasPhone",
+              "value": "true"
+            },
+            {
+              "name": "excludeOptOut",
+              "value": "true"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 3
+          }
+        }
+      },
+      "id": "load-users",
+      "name": "Load Inactive Users",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🧠 INTELLIGENT USER SEGMENTATION\n * Segment 650 users by priority for optimal ROI\n */\n\nconst users = $input.first().json.users || [];\nconst campaignSession = $input.first().json.campaignSession;\n\nif (users.length === 0) {\n  throw new Error('No inactive users found for campaign');\n}\n\n// Segmentation algorithm\nfunction segmentUsers(users) {\n  const segments = {\n    CRITICA: [],\n    ALTA: [],\n    MEDIA: [],\n    BAIXA: []\n  };\n\n  users.forEach(user => {\n    const score = calculatePriorityScore(user);\n    \n    if (score >= 80) {\n      segments.CRITICA.push({ ...user, priority: score, segment: 'CRITICA' });\n    } else if (score >= 60) {\n      segments.ALTA.push({ ...user, priority: score, segment: 'ALTA' });\n    } else if (score >= 40) {\n      segments.MEDIA.push({ ...user, priority: score, segment: 'MEDIA' });\n    } else {\n      segments.BAIXA.push({ ...user, priority: score, segment: 'BAIXA' });\n    }\n  });\n\n  return segments;\n}\n\nfunction calculatePriorityScore(user) {\n  let score = 0;\n  \n  // Registration date factor (newer = higher priority)\n  const regDate = new Date(user.dataRegistro);\n  const daysSinceReg = (Date.now() - regDate.getTime()) / (1000 * 60 * 60 * 24);\n  \n  if (daysSinceReg < 90) score += 40;\n  else if (daysSinceReg < 180) score += 30;\n  else if (daysSinceReg < 365) score += 20;\n  else score += 10;\n  \n  // Last activity factor\n  if (user.ultimaAtividade) {\n    const lastActivity = new Date(user.ultimaAtividade);\n    const daysSinceActivity = (Date.now() - lastActivity.getTime()) / (1000 * 60 * 60 * 24);\n    \n    if (daysSinceActivity < 30) score += 30;\n    else if (daysSinceActivity < 60) score += 20;\n    else if (daysSinceActivity < 90) score += 10;\n  }\n  \n  // Payment history factor\n  if (user.historicoPagemento) {\n    if (user.historicoPagemento >= 6) score += 20;\n    else if (user.historicoPagemento >= 3) score += 15;\n    else if (user.historicoPagemento >= 1) score += 10;\n  }\n  \n  // Engagement factor\n  if (user.engajamento) {\n    score += Math.min(user.engajamento * 10, 20);\n  }\n  \n  return Math.min(score, 100);\n}\n\nconst segments = segmentUsers(users);\nconst totalUsers = Object.values(segments).reduce((sum, segment) => sum + segment.length, 0);\n\nconst segmentationResult = {\n  campaignId: campaignSession.id,\n  totalUsers,\n  segments,\n  segmentSummary: {\n    CRITICA: segments.CRITICA.length,\n    ALTA: segments.ALTA.length,\n    MEDIA: segments.MEDIA.length,\n    BAIXA: segments.BAIXA.length\n  },\n  qualityScore: totalUsers >= 500 ? 0.95 : 0.8,\n  timestamp: new Date().toISOString()\n};\n\nconsole.log('🧠 User segmentation completed:', segmentationResult.segmentSummary);\n\nreturn {\n  json: {\n    ...segmentationResult,\n    campaignSession: {\n      ...campaignSession,\n      status: 'segmented',\n      segmentation: segmentationResult\n    },\n    nextAction: 'execute_segments'\n  }\n};"
+      },
+      "id": "user-segmentation",
+      "name": "Intelligent User Segmentation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📤 SEGMENT EXECUTION CONTROLLER\n * Process segments by priority with intelligent delays\n */\n\nconst data = $input.first().json;\nconst segments = data.segments;\nconst campaignSession = data.campaignSession;\n\n// Execution order by priority\nconst executionOrder = ['CRITICA', 'ALTA', 'MEDIA', 'BAIXA'];\nconst segmentExecutions = [];\n\nfor (const priority of executionOrder) {\n  const segment = segments[priority];\n  if (!segment || segment.length === 0) continue;\n\n  segmentExecutions.push({\n    priority,\n    users: segment,\n    userCount: segment.length,\n    batchSize: campaignSession.config.batchSize,\n    delayBetweenBatches: campaignSession.config.delayBetweenBatches,\n    expectedConversion: getExpectedConversion(priority),\n    executionOrder: executionOrder.indexOf(priority) + 1\n  });\n}\n\nfunction getExpectedConversion(priority) {\n  const rates = {\n    CRITICA: 0.35,\n    ALTA: 0.25,\n    MEDIA: 0.15,\n    BAIXA: 0.08\n  };\n  return rates[priority] || 0.05;\n}\n\nconsole.log(`📤 Prepared ${segmentExecutions.length} segments for execution`);\n\nreturn segmentExecutions.map(segment => ({\n  json: {\n    segmentExecution: segment,\n    campaignSession,\n    totalSegments: segmentExecutions.length,\n    timestamp: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "segment-controller",
+      "name": "Segment Execution Controller",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/campaigns/execute-segment",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "campaignId",
+              "value": "={{$json.campaignSession.id}}"
+            },
+            {
+              "name": "segment",
+              "value": "={{$json.segmentExecution}}"
+            },
+            {
+              "name": "config",
+              "value": "={{$json.campaignSession.config}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 300000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 2
+          }
+        }
+      },
+      "id": "execute-segment",
+      "name": "Execute Segment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1360, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 💰 REAL-TIME ROI CALCULATION\n * Calculate ROI as segments complete\n */\n\nconst segmentResult = $input.first().json;\nconst campaignSession = segmentResult.campaignSession;\n\n// Investment and revenue calculations\nconst investment = 1500; // R$ campaign cost\nconst avgMonthlyValue = 129.90;\n\nfunction calculateSegmentROI(segmentResult) {\n  const priority = segmentResult.segmentExecution.priority;\n  const conversionRate = segmentResult.segmentExecution.expectedConversion;\n  const monthsProjected = priority === 'BAIXA' ? 3 : 6;\n  \n  const sent = segmentResult.sent || 0;\n  const expectedReactivations = Math.floor(sent * conversionRate);\n  const expectedRevenue = expectedReactivations * avgMonthlyValue * monthsProjected;\n  \n  return {\n    priority,\n    sent,\n    expectedReactivations,\n    expectedRevenue,\n    conversionRate,\n    monthsProjected\n  };\n}\n\nconst segmentROI = calculateSegmentROI(segmentResult);\n\n// Update campaign session with segment results\nconst updatedSession = {\n  ...campaignSession,\n  segmentResults: {\n    ...campaignSession.segmentResults,\n    [segmentROI.priority]: segmentROI\n  }\n};\n\n// Calculate cumulative ROI\nconst cumulativeRevenue = Object.values(updatedSession.segmentResults || {})\n  .reduce((sum, segment) => sum + (segment.expectedRevenue || 0), 0);\n\nconst cumulativeROI = ((cumulativeRevenue - investment) / investment) * 100;\nconst achievesTarget = cumulativeROI >= 2250;\n\nconst roiUpdate = {\n  campaignId: campaignSession.id,\n  segment: segmentROI.priority,\n  segmentROI,\n  cumulativeRevenue,\n  cumulativeROI: Math.round(cumulativeROI),\n  achievesTarget,\n  investment,\n  timestamp: new Date().toISOString()\n};\n\nconsole.log(`💰 ROI Update - ${segmentROI.priority}: ${Math.round(cumulativeROI)}% (Target: 2250%+)`);\n\nreturn {\n  json: {\n    roiUpdate,\n    updatedSession,\n    nextAction: 'update_roi_tracking'\n  }\n};"
+      },
+      "id": "roi-calculator",
+      "name": "Real-time ROI Calculator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/campaigns/update-roi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "roiUpdate",
+              "value": "={{$json.roiUpdate}}"
+            },
+            {
+              "name": "campaignSession",
+              "value": "={{$json.updatedSession}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "update-roi",
+      "name": "Update ROI Tracking",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1800, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-roi-achieved",
+              "leftValue": "={{$json.roiUpdate.achievesTarget}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "roi-check",
+      "name": "ROI Target Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2020, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎉 CAMPAIGN SUCCESS NOTIFICATION\n * Trigger when ROI target is achieved\n */\n\nconst data = $input.first().json;\nconst roiUpdate = data.roiUpdate;\n\nconst successNotification = {\n  type: 'CAMPAIGN_SUCCESS',\n  campaignId: roiUpdate.campaignId,\n  achievedROI: roiUpdate.cumulativeROI,\n  targetROI: 2250,\n  exceededBy: roiUpdate.cumulativeROI - 2250,\n  message: `🎉 Campaign 650 SUCCESS! Achieved ${roiUpdate.cumulativeROI}% ROI (Target: 2250%+)`,\n  timestamp: new Date().toISOString(),\n  actions: [\n    'Monitor conversion rates over next 30 days',\n    'Prepare follow-up campaigns for non-responders',\n    'Analyze high-performing segments',\n    'Scale successful strategies'\n  ]\n};\n\nconsole.log('🎉 ROI TARGET ACHIEVED!', successNotification.message);\n\nreturn {\n  json: successNotification\n};"
+      },
+      "id": "success-notification",
+      "name": "Success Notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2240, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * ⚠️ CAMPAIGN OPTIMIZATION ALERT\n * Trigger when ROI target needs optimization\n */\n\nconst data = $input.first().json;\nconst roiUpdate = data.roiUpdate;\n\nconst optimizationAlert = {\n  type: 'CAMPAIGN_OPTIMIZATION',\n  campaignId: roiUpdate.campaignId,\n  currentROI: roiUpdate.cumulativeROI,\n  targetROI: 2250,\n  gapToTarget: 2250 - roiUpdate.cumulativeROI,\n  message: `⚠️ Campaign 650 needs optimization. Current ROI: ${roiUpdate.cumulativeROI}% (Target: 2250%+)`,\n  timestamp: new Date().toISOString(),\n  optimizationActions: [\n    'Analyze low-performing segments',\n    'Optimize message templates',\n    'Increase follow-up frequency',\n    'Consider additional incentives',\n    'Review targeting criteria'\n  ],\n  urgency: roiUpdate.cumulativeROI < 1000 ? 'HIGH' : 'MEDIUM'\n};\n\nconsole.log('⚠️ OPTIMIZATION NEEDED:', optimizationAlert.message);\n\nreturn {\n  json: optimizationAlert\n};"
+      },
+      "id": "optimization-alert",
+      "name": "Optimization Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2240, 400]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/notifications/send",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "notification",
+              "value": "={{$json}}"
+            },
+            {
+              "name": "channels",
+              "value": "[\"email\", \"webhook\", \"dashboard\"]"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "send-notification",
+      "name": "Send Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2460, 300]
+    }
+  ],
+  "connections": {
+    "Campaign 650 Trigger": {
+      "main": [
+        [
+          {
+            "node": "Campaign Initialization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Campaign Initialization": {
+      "main": [
+        [
+          {
+            "node": "Load Inactive Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Inactive Users": {
+      "main": [
+        [
+          {
+            "node": "Intelligent User Segmentation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intelligent User Segmentation": {
+      "main": [
+        [
+          {
+            "node": "Segment Execution Controller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segment Execution Controller": {
+      "main": [
+        [
+          {
+            "node": "Execute Segment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Segment": {
+      "main": [
+        [
+          {
+            "node": "Real-time ROI Calculator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Real-time ROI Calculator": {
+      "main": [
+        [
+          {
+            "node": "Update ROI Tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update ROI Tracking": {
+      "main": [
+        [
+          {
+            "node": "ROI Target Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ROI Target Check": {
+      "main": [
+        [
+          {
+            "node": "Success Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Optimization Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Notification": {
+      "main": [
+        [
+          {
+            "node": "Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Optimization Alert": {
+      "main": [
+        [
+          {
+            "node": "Send Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "createdAt": "2025-09-20T00:20:00.000Z",
+      "updatedAt": "2025-09-20T00:20:00.000Z",
+      "id": "campaign-automation",
+      "name": "Campaign Automation"
+    },
+    {
+      "createdAt": "2025-09-20T00:20:00.000Z",
+      "updatedAt": "2025-09-20T00:20:00.000Z",
+      "id": "fullforce-academia",
+      "name": "FullForce Academia"
+    },
+    {
+      "createdAt": "2025-09-20T00:20:00.000Z",
+      "updatedAt": "2025-09-20T00:20:00.000Z",
+      "id": "roi-tracking",
+      "name": "ROI Tracking"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-20T00:20:00.000Z",
+  "versionId": "campaign-650-v2.0"
+}

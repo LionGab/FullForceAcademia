@@ -1,0 +1,102 @@
+{
+  "name": "fullforce-academia",
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,md}\"",
+    "analyze": "npm run build && source-map-explorer 'dist/assets/*.js'",
+    "lighthouse": "lighthouse https://fullforceacademia.com.br --output html --view",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    
+    "// Substituir Framer Motion por CSS animations ou biblioteca mais leve": "",
+    "@formkit/auto-animate": "^0.8.1",
+    
+    "// UI Components - apenas o necessário": "",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-toast": "^1.1.5",
+    
+    "// Icons otimizados - usar apenas os necessários": "",
+    "react-icons": "^4.12.0",
+    
+    "// Utilitários essenciais": "",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.0",
+    
+    "// Analytics e tracking": "",
+    "react-ga4": "^2.1.0",
+    
+    "// Performance monitoring": "",
+    "web-vitals": "^3.5.0",
+    
+    "// Lazy loading de imagens": "",
+    "react-lazy-load-image-component": "^1.6.0",
+    
+    "// Form handling": "",
+    "react-hook-form": "^7.48.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "vite": "^5.0.8",
+    
+    "// Otimização e análise": "",
+    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-pwa": "^0.17.4",
+    "rollup-plugin-visualizer": "^5.11.0",
+    "vite-plugin-imagemin": "^0.6.1",
+    
+    "// Testing": "",
+    "vitest": "^1.1.0",
+    "@testing-library/react": "^14.1.2",
+    "@testing-library/jest-dom": "^6.1.5",
+    "@testing-library/user-event": "^14.5.1",
+    "@vitest/ui": "^1.1.0",
+    "jsdom": "^23.0.1",
+    
+    "// Linting e formatação": "",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.1.1",
+    "eslint-config-prettier": "^9.1.0",
+    
+    "// Type checking": "",
+    "typescript": "^5.3.3",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    
+    "// CSS": "",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32",
+    
+    "// Security": "",
+    "eslint-plugin-security": "^2.1.0",
+    
+    "// Bundle analysis": "",
+    "source-map-explorer": "^2.5.3"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

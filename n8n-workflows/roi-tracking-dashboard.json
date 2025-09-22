@@ -1,0 +1,378 @@
+{
+  "name": "FullForce Academia - ROI Tracking Dashboard",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "secondsInterval": 300
+            }
+          ]
+        }
+      },
+      "id": "roi-tracker-cron",
+      "name": "ROI Tracker (5min)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [260, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/campaigns/active",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "get-active-campaigns",
+      "name": "Get Active Campaigns",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📊 ACTIVE CAMPAIGNS PROCESSOR\n * Process multiple active campaigns for ROI tracking\n */\n\nconst response = $input.first().json;\nconst activeCampaigns = response.campaigns || [];\n\nif (activeCampaigns.length === 0) {\n  console.log('ℹ️ No active campaigns found for ROI tracking');\n  return [];\n}\n\n// Process each campaign for individual ROI tracking\nconst campaignProcesses = activeCampaigns.map(campaign => {\n  return {\n    campaignId: campaign.id,\n    name: campaign.name,\n    status: campaign.status,\n    startDate: campaign.startDate,\n    targetUsers: campaign.targetUsers,\n    expectedROI: campaign.expectedROI,\n    currentMetrics: campaign.currentMetrics || {},\n    lastUpdated: new Date().toISOString(),\n    trackingEnabled: true\n  };\n});\n\nconsole.log(`📊 Processing ROI tracking for ${campaignProcesses.length} active campaigns`);\n\nreturn campaignProcesses.map(campaign => ({ json: campaign }));"
+      },
+      "id": "process-campaigns",
+      "name": "Process Active Campaigns",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/campaigns/{{$json.campaignId}}/metrics",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "get-campaign-metrics",
+      "name": "Get Campaign Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [920, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 💰 REAL-TIME ROI CALCULATOR\n * Calculate live ROI metrics for dashboard display\n */\n\nconst campaignData = $input.first().json;\nconst metrics = campaignData.metrics || {};\n\n// ROI Calculation Constants\nconst INVESTMENT = 1500; // R$ campaign cost\nconst AVG_MONTHLY_VALUE = 129.90;\nconst CONVERSION_RATES = {\n  CRITICA: 0.35,\n  ALTA: 0.25,\n  MEDIA: 0.15,\n  BAIXA: 0.08\n};\n\nfunction calculateLiveROI(metrics) {\n  let totalRevenue = 0;\n  let totalReactivations = 0;\n  const segmentAnalysis = {};\n\n  // Calculate by segment\n  Object.entries(metrics.segments || {}).forEach(([segment, data]) => {\n    const conversionRate = CONVERSION_RATES[segment] || 0.1;\n    const monthsProjected = segment === 'BAIXA' ? 3 : 6;\n    \n    const sent = data.sent || 0;\n    const errors = data.errors || 0;\n    const reactivations = Math.floor(sent * conversionRate);\n    const revenue = reactivations * AVG_MONTHLY_VALUE * monthsProjected;\n    \n    segmentAnalysis[segment] = {\n      sent,\n      errors,\n      successRate: sent > 0 ? ((sent / (sent + errors)) * 100).toFixed(1) : 0,\n      expectedReactivations: reactivations,\n      expectedRevenue: revenue,\n      conversionRate: (conversionRate * 100).toFixed(1)\n    };\n    \n    totalRevenue += revenue;\n    totalReactivations += reactivations;\n  });\n\n  // Calculate overall ROI\n  const roi = ((totalRevenue - INVESTMENT) / INVESTMENT) * 100;\n  const achievesTarget = roi >= 2250;\n  \n  return {\n    campaignId: campaignData.campaignId,\n    timestamp: new Date().toISOString(),\n    investment: INVESTMENT,\n    projectedRevenue: totalRevenue,\n    roi: Math.round(roi),\n    achievesTarget,\n    expectedReactivations: totalReactivations,\n    segmentAnalysis,\n    performance: {\n      totalSent: Object.values(segmentAnalysis).reduce((sum, seg) => sum + seg.sent, 0),\n      totalErrors: Object.values(segmentAnalysis).reduce((sum, seg) => sum + seg.errors, 0),\n      overallSuccessRate: calculateOverallSuccessRate(segmentAnalysis)\n    },\n    targets: {\n      minROI: 2250,\n      maxROI: 3750,\n      progressToMin: Math.min((roi / 2250) * 100, 100),\n      progressToMax: Math.min((roi / 3750) * 100, 100)\n    }\n  };\n}\n\nfunction calculateOverallSuccessRate(segmentAnalysis) {\n  const totalSent = Object.values(segmentAnalysis).reduce((sum, seg) => sum + seg.sent, 0);\n  const totalErrors = Object.values(segmentAnalysis).reduce((sum, seg) => sum + seg.errors, 0);\n  \n  return totalSent > 0 ? ((totalSent / (totalSent + totalErrors)) * 100).toFixed(1) : 0;\n}\n\nconst roiCalculation = calculateLiveROI(metrics);\n\n// Determine alert level\nlet alertLevel = 'success';\nif (roiCalculation.roi < 1000) alertLevel = 'critical';\nelse if (roiCalculation.roi < 2000) alertLevel = 'warning';\nelse if (roiCalculation.roi < 2250) alertLevel = 'info';\n\nconst dashboardData = {\n  ...roiCalculation,\n  alertLevel,\n  campaignName: campaignData.name,\n  status: campaignData.status,\n  lastCalculated: new Date().toISOString(),\n  dashboardUpdate: true\n};\n\nconsole.log(`💰 ROI calculated for ${campaignData.campaignId}: ${roiCalculation.roi}% (${alertLevel})`);\n\nreturn {\n  json: dashboardData\n};"
+      },
+      "id": "calculate-live-roi",
+      "name": "Calculate Live ROI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1140, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "roi-target-check",
+              "leftValue": "={{$json.achievesTarget}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "roi-achievement-check",
+      "name": "ROI Achievement Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1360, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎉 ROI SUCCESS DASHBOARD UPDATE\n * Update dashboard with success metrics\n */\n\nconst roiData = $input.first().json;\n\nconst successDashboard = {\n  type: 'ROI_SUCCESS',\n  campaignId: roiData.campaignId,\n  roi: roiData.roi,\n  status: 'TARGET_ACHIEVED',\n  achievement: {\n    exceededTarget: roiData.roi - 2250,\n    progressToMax: roiData.targets.progressToMax,\n    reactivations: roiData.expectedReactivations,\n    revenue: roiData.projectedRevenue\n  },\n  dashboard: {\n    title: `🎉 Campaign Success: ${roiData.roi}% ROI`,\n    subtitle: `Target achieved! ${roiData.expectedReactivations} expected reactivations`,\n    color: 'success',\n    priority: 'high',\n    timestamp: new Date().toISOString()\n  },\n  metrics: roiData.segmentAnalysis,\n  nextActions: [\n    'Monitor conversion rates over next 30 days',\n    'Scale successful strategies to other campaigns',\n    'Analyze top-performing segments',\n    'Prepare victory report for stakeholders'\n  ]\n};\n\nconsole.log('🎉 ROI SUCCESS: Dashboard updated with achievement metrics');\n\nreturn {\n  json: successDashboard\n};"
+      },
+      "id": "success-dashboard",
+      "name": "Success Dashboard Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📊 STANDARD ROI DASHBOARD UPDATE\n * Update dashboard with current progress\n */\n\nconst roiData = $input.first().json;\n\nconst standardDashboard = {\n  type: 'ROI_PROGRESS',\n  campaignId: roiData.campaignId,\n  roi: roiData.roi,\n  status: 'IN_PROGRESS',\n  progress: {\n    toMinTarget: roiData.targets.progressToMin,\n    toMaxTarget: roiData.targets.progressToMax,\n    currentReactivations: roiData.expectedReactivations,\n    currentRevenue: roiData.projectedRevenue\n  },\n  dashboard: {\n    title: `📊 Campaign Progress: ${roiData.roi}% ROI`,\n    subtitle: `${roiData.targets.progressToMin.toFixed(1)}% to target (${roiData.expectedReactivations} reactivations)`,\n    color: roiData.alertLevel === 'critical' ? 'danger' : \n           roiData.alertLevel === 'warning' ? 'warning' : 'info',\n    priority: roiData.alertLevel === 'critical' ? 'high' : 'normal',\n    timestamp: new Date().toISOString()\n  },\n  segments: Object.entries(roiData.segmentAnalysis).map(([segment, data]) => ({\n    name: segment,\n    sent: data.sent,\n    successRate: data.successRate,\n    expectedReactivations: data.expectedReactivations,\n    expectedRevenue: data.expectedRevenue\n  })),\n  recommendations: generateRecommendations(roiData)\n};\n\nfunction generateRecommendations(roiData) {\n  const recommendations = [];\n  \n  if (roiData.roi < 1000) {\n    recommendations.push('🚨 Critical: Review message templates and targeting');\n    recommendations.push('📈 Consider increasing incentives or discounts');\n    recommendations.push('🔄 Implement immediate follow-up sequences');\n  } else if (roiData.roi < 2000) {\n    recommendations.push('⚠️ Optimize low-performing segments');\n    recommendations.push('📱 Increase message frequency for CRITICA segment');\n    recommendations.push('💡 A/B test different message approaches');\n  } else {\n    recommendations.push('✅ Campaign performing well, monitor closely');\n    recommendations.push('🎯 Consider scaling successful strategies');\n    recommendations.push('📊 Document best practices for future campaigns');\n  }\n  \n  return recommendations;\n}\n\nconsole.log(`📊 STANDARD UPDATE: Dashboard updated with ${roiData.alertLevel} alert level`);\n\nreturn {\n  json: standardDashboard\n};"
+      },
+      "id": "standard-dashboard",
+      "name": "Standard Dashboard Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1580, 400]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/dashboard/roi-update",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "dashboardData",
+              "value": "={{$json}}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{new Date().toISOString()}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Dashboard-Source",
+              "value": "n8n-roi-tracker"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "update-dashboard",
+      "name": "Update ROI Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1800, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📈 ANALYTICS DATA PROCESSOR\n * Process dashboard data for analytics storage\n */\n\nconst dashboardData = $input.first().json;\n\nconst analyticsPayload = {\n  type: 'roi_tracking',\n  source: 'n8n_dashboard',\n  timestamp: new Date().toISOString(),\n  campaignId: dashboardData.campaignId,\n  metrics: {\n    roi: dashboardData.roi,\n    expectedReactivations: dashboardData.progress?.currentReactivations || dashboardData.achievement?.reactivations,\n    expectedRevenue: dashboardData.progress?.currentRevenue || dashboardData.achievement?.revenue,\n    alertLevel: dashboardData.dashboard.color,\n    achievesTarget: dashboardData.type === 'ROI_SUCCESS'\n  },\n  performance: {\n    progressToMin: dashboardData.progress?.toMinTarget || 100,\n    progressToMax: dashboardData.progress?.toMaxTarget || dashboardData.achievement?.progressToMax\n  },\n  segments: dashboardData.segments || [],\n  timestamp_hour: new Date().getHours(),\n  timestamp_day: new Date().getDate(),\n  real_time: true\n};\n\nconsole.log('📈 Analytics data processed for storage');\n\nreturn {\n  json: analyticsPayload\n};"
+      },
+      "id": "analytics-processor",
+      "name": "Analytics Data Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2020, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/api/analytics/store",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "analyticsData",
+              "value": "={{$json}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "store-analytics",
+      "name": "Store Analytics Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2240, 300]
+    }
+  ],
+  "connections": {
+    "ROI Tracker (5min)": {
+      "main": [
+        [
+          {
+            "node": "Get Active Campaigns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Campaigns": {
+      "main": [
+        [
+          {
+            "node": "Process Active Campaigns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Active Campaigns": {
+      "main": [
+        [
+          {
+            "node": "Get Campaign Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Campaign Metrics": {
+      "main": [
+        [
+          {
+            "node": "Calculate Live ROI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Live ROI": {
+      "main": [
+        [
+          {
+            "node": "ROI Achievement Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ROI Achievement Check": {
+      "main": [
+        [
+          {
+            "node": "Success Dashboard Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Standard Dashboard Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Dashboard Update": {
+      "main": [
+        [
+          {
+            "node": "Update ROI Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Standard Dashboard Update": {
+      "main": [
+        [
+          {
+            "node": "Update ROI Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update ROI Dashboard": {
+      "main": [
+        [
+          {
+            "node": "Analytics Data Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analytics Data Processor": {
+      "main": [
+        [
+          {
+            "node": "Store Analytics Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "createdAt": "2025-09-20T00:30:00.000Z",
+      "updatedAt": "2025-09-20T00:30:00.000Z",
+      "id": "roi-tracking",
+      "name": "ROI Tracking"
+    },
+    {
+      "createdAt": "2025-09-20T00:30:00.000Z",
+      "updatedAt": "2025-09-20T00:30:00.000Z",
+      "id": "dashboard-automation",
+      "name": "Dashboard Automation"
+    },
+    {
+      "createdAt": "2025-09-20T00:30:00.000Z",
+      "updatedAt": "2025-09-20T00:30:00.000Z",
+      "id": "real-time-analytics",
+      "name": "Real-time Analytics"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-20T00:30:00.000Z",
+  "versionId": "roi-dashboard-v2.0"
+}
