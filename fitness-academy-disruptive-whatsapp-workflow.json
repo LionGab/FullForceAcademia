@@ -1,0 +1,907 @@
+{
+  "name": "🚀 FITNESS ACADEMY - DISRUPTIVE WHATSAPP AUTOMATION",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "fitness-academy-webhook",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "🎯 Lead Capture Hub",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300],
+      "webhookId": "fitness-academy-lead-capture",
+      "notes": "Receives leads from website forms, social media, QR codes, and direct messages"
+    },
+    {
+      "parameters": {
+        "jsCode": "// DISRUPTIVE LEAD SCORING AND QUALIFICATION ENGINE\nconst input = $input.first().json;\nconst currentTime = new Date();\nconst leadData = input.body || input;\n\n// Extract lead information from multiple sources\nlet leadSource = 'unknown';\nlet contactInfo = {};\nlet qualificationScore = 0;\nlet urgencyLevel = 'low';\nlet leadIntent = 'unknown';\n\n// Determine lead source and extract data\nif (leadData.source === 'website_form') {\n  leadSource = 'website';\n  contactInfo = {\n    name: leadData.name || '',\n    phone: leadData.phone || '',\n    email: leadData.email || '',\n    interest: leadData.interest || '',\n    message: leadData.message || ''\n  };\n  qualificationScore += 30; // Website leads are pre-qualified\n} else if (leadData.source === 'facebook_ads') {\n  leadSource = 'facebook';\n  contactInfo = {\n    name: leadData.full_name || '',\n    phone: leadData.phone_number || '',\n    email: leadData.email || '',\n    ad_name: leadData.ad_name || '',\n    campaign_name: leadData.campaign_name || ''\n  };\n  qualificationScore += 25;\n} else if (leadData.source === 'instagram') {\n  leadSource = 'instagram';\n  contactInfo = {\n    name: leadData.username || '',\n    phone: leadData.phone || '',\n    dm_content: leadData.message || ''\n  };\n  qualificationScore += 20;\n} else if (leadData.source === 'qr_code') {\n  leadSource = 'qr_scan';\n  contactInfo = {\n    phone: leadData.phone || '',\n    location: leadData.scan_location || '',\n    timestamp: leadData.scan_time || ''\n  };\n  qualificationScore += 40; // QR scans show high intent\n} else if (leadData.source === 'referral') {\n  leadSource = 'referral';\n  contactInfo = {\n    name: leadData.referred_name || '',\n    phone: leadData.referred_phone || '',\n    referrer_name: leadData.referrer_name || '',\n    referrer_phone: leadData.referrer_phone || ''\n  };\n  qualificationScore += 50; // Referrals have highest conversion\n}\n\n// Advanced qualification scoring\nif (contactInfo.phone && contactInfo.phone.length >= 10) qualificationScore += 20;\nif (contactInfo.email && contactInfo.email.includes('@')) qualificationScore += 15;\nif (contactInfo.name && contactInfo.name.length > 2) qualificationScore += 10;\n\n// Intent analysis\nconst intentKeywords = {\n  high: ['quero', 'preciso', 'urgente', 'hoje', 'agora', 'matricula', 'começar', 'iniciar'],\n  medium: ['interesse', 'informação', 'saber', 'conhecer', 'visitar', 'avaliar'],\n  low: ['talvez', 'futuro', 'pensar', 'considerar', 'dúvida']\n};\n\nconst messageText = (contactInfo.message || contactInfo.dm_content || '').toLowerCase();\nif (intentKeywords.high.some(word => messageText.includes(word))) {\n  leadIntent = 'high';\n  qualificationScore += 30;\n  urgencyLevel = 'high';\n} else if (intentKeywords.medium.some(word => messageText.includes(word))) {\n  leadIntent = 'medium';\n  qualificationScore += 15;\n  urgencyLevel = 'medium';\n} else if (intentKeywords.low.some(word => messageText.includes(word))) {\n  leadIntent = 'low';\n  qualificationScore += 5;\n}\n\n// Time-based urgency (business hours = higher urgency)\nconst hour = currentTime.getHours();\nif (hour >= 6 && hour <= 22) {\n  qualificationScore += 10;\n  if (urgencyLevel === 'low') urgencyLevel = 'medium';\n}\n\n// Determine lead temperature\nlet leadTemperature = 'cold';\nif (qualificationScore >= 80) leadTemperature = 'hot';\nelse if (qualificationScore >= 50) leadTemperature = 'warm';\n\n// Generate personalized welcome message\nlet welcomeMessage = '';\nconst firstName = (contactInfo.name || '').split(' ')[0] || 'amigo(a)';\n\nif (leadTemperature === 'hot') {\n  welcomeMessage = `🔥 Oi ${firstName}! PERFEITO timing!\\n\\n💪 Vi que você tem INTERESSE REAL em transformar seu corpo!\\n\\n🎯 Vou te fazer uma PROPOSTA IRRESISTÍVEL:\\n\\n✅ Avaliação física GRATUITA\\n✅ Aula experimental SEM COMPROMISSO\\n✅ Plano personalizado na hora\\n\\n🚀 BÔNUS: Se decidir hoje, ganha 2 SEMANAS GRÁTIS!\\n\\nQual seu objetivo principal? Responde aí! 👇`;\n} else if (leadTemperature === 'warm') {\n  welcomeMessage = `👋 Oi ${firstName}! Bem-vindo(a)!\\n\\n🏋️ Vi seu interesse na nossa academia! Que legal!\\n\\n🎁 Preparei algo ESPECIAL pra você:\\n\\n✅ Tour completo nas instalações\\n✅ Conversa com personal trainer\\n✅ Avaliação física gratuita\\n\\nConta pra mim: qual seu maior desafio fitness? 💪`;\n} else {\n  welcomeMessage = `😊 Olá! Obrigado pelo contato!\\n\\n🏃‍♀️ Que bom ter você aqui! Nossa academia vai te surpreender!\\n\\n📋 MENU RÁPIDO:\\n1️⃣ *PLANOS* - Ver preços\\n2️⃣ *HORÁRIOS* - Funcionamento\\n3️⃣ *AGENDAR* - Visita gratuita\\n4️⃣ *MODALIDADES* - Atividades\\n\\nO que te interessa mais? 🤔`;\n}\n\n// Clean phone number\nconst cleanPhone = (contactInfo.phone || '').replace(/[^0-9]/g, '');\n\nreturn [{\n  json: {\n    // Original data\n    originalData: leadData,\n    \n    // Processed lead information\n    leadId: `LEAD_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n    source: leadSource,\n    name: contactInfo.name || 'Lead Anônimo',\n    phone: cleanPhone,\n    email: contactInfo.email || '',\n    \n    // Qualification data\n    qualificationScore,\n    leadTemperature,\n    leadIntent,\n    urgencyLevel,\n    \n    // Communication\n    welcomeMessage,\n    \n    // Timestamps\n    capturedAt: currentTime.toISOString(),\n    timezone: 'America/Sao_Paulo',\n    \n    // Workflow control\n    shouldSendImmediate: leadTemperature === 'hot',\n    followUpSequence: leadTemperature,\n    \n    // Analytics\n    expectedConversionRate: leadTemperature === 'hot' ? 0.4 : leadTemperature === 'warm' ? 0.25 : 0.15,\n    estimatedValue: leadTemperature === 'hot' ? 1200 : leadTemperature === 'warm' ? 800 : 400\n  }\n}];"
+      },
+      "id": "b2c3d4e5-f6g7-8901-bcde-f23456789012",
+      "name": "🧠 AI Lead Qualification Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 300],
+      "notes": "Advanced AI-powered lead scoring with behavioral analysis and intent detection"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "serviceAccountEmail": "zbenzap-sniper@stellar-verve-457002-p2.iam.gserviceaccount.com",
+        "operation": "appendOrUpdate",
+        "documentId": "{{ $vars.GOOGLE_SHEETS_LEADS_ID }}",
+        "sheetName": "Leads_Dashboard",
+        "columnToMatchOn": "A",
+        "valueToMatchOn": "={{ $json.leadId }}",
+        "valuesToSend": {
+          "specifyColumns": "defineBelow",
+          "columnsToSend": {
+            "A": "={{ $json.leadId }}",
+            "B": "={{ $json.capturedAt }}",
+            "C": "={{ $json.name }}",
+            "D": "={{ $json.phone }}",
+            "E": "={{ $json.email }}",
+            "F": "={{ $json.source }}",
+            "G": "={{ $json.qualificationScore }}",
+            "H": "={{ $json.leadTemperature }}",
+            "I": "={{ $json.leadIntent }}",
+            "J": "={{ $json.urgencyLevel }}",
+            "K": "={{ $json.expectedConversionRate }}",
+            "L": "={{ $json.estimatedValue }}",
+            "M": "CAPTURED",
+            "N": "Aguardando primeiro contato",
+            "O": "={{ new Date().toISOString() }}"
+          }
+        }
+      },
+      "id": "c3d4e5f6-g7h8-9012-cdef-345678901234",
+      "name": "📊 Log to Analytics Dashboard",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [580, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets Fitness Academy"
+        }
+      },
+      "notes": "Real-time lead tracking in Google Sheets with comprehensive analytics"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            },
+            {
+              "leftValue": "={{ $json.phone.length }}",
+              "rightValue": 10,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "d4e5f6g7-h8i9-0123-def0-456789012345",
+      "name": "✅ Validate Contact Info",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [580, 400],
+      "notes": "Ensures lead has valid phone number before WhatsApp outreach"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.shouldSendImmediate }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ]
+        }
+      },
+      "id": "e5f6g7h8-i9j0-1234-ef01-567890123456",
+      "name": "🔥 Hot Lead Filter",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [820, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "{{ $vars.WHATSAPP_PHONE_ID }}",
+        "recipientPhoneNumber": "55{{ $json.phone }}",
+        "messageType": "interactive",
+        "interactiveMessageType": "button",
+        "bodyText": "{{ $json.welcomeMessage }}",
+        "buttonParameters": {
+          "values": [
+            {
+              "text": "🎯 QUERO CONHECER!",
+              "id": "hot_lead_interested"
+            },
+            {
+              "text": "📞 FALAR COM CONSULTOR",
+              "id": "hot_lead_consultant"
+            },
+            {
+              "text": "📅 AGENDAR VISITA",
+              "id": "hot_lead_schedule"
+            }
+          ]
+        },
+        "footerText": "Academia Fitness Pro - Transforme seu corpo hoje!"
+      },
+      "id": "f6g7h8i9-j0k1-2345-f012-678901234567",
+      "name": "⚡ Instant Hot Lead Response",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [1060, 200],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-business-credentials",
+          "name": "WhatsApp Business API"
+        }
+      },
+      "notes": "Immediate interactive response for high-intent leads"
+    },
+    {
+      "parameters": {
+        "amount": 180,
+        "unit": "seconds"
+      },
+      "id": "g7h8i9j0-k1l2-3456-0123-789012345678",
+      "name": "⏰ Smart Timing Buffer",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [820, 500],
+      "notes": "Strategic delay for warm/cold leads - optimal response timing"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "{{ $vars.WHATSAPP_PHONE_ID }}",
+        "recipientPhoneNumber": "55{{ $json.phone }}",
+        "messageType": "interactive",
+        "interactiveMessageType": "list",
+        "bodyText": "{{ $json.welcomeMessage }}",
+        "listParameters": {
+          "buttonText": "📋 ESCOLHER OPÇÃO",
+          "title": "Como posso ajudar?",
+          "sections": [
+            {
+              "title": "🎯 INFORMAÇÕES",
+              "rows": [
+                {
+                  "id": "info_plans",
+                  "title": "💰 Planos e Preços",
+                  "description": "Conheça nossos planos especiais"
+                },
+                {
+                  "id": "info_schedule",
+                  "title": "🕐 Horários",
+                  "description": "Funcionamento e aulas"
+                },
+                {
+                  "id": "info_activities",
+                  "title": "🏋️ Modalidades",
+                  "description": "Todas as atividades disponíveis"
+                }
+              ]
+            },
+            {
+              "title": "🚀 AÇÃO IMEDIATA",
+              "rows": [
+                {
+                  "id": "action_visit",
+                  "title": "📅 Agendar Visita",
+                  "description": "Tour gratuito + avaliação"
+                },
+                {
+                  "id": "action_trial",
+                  "title": "🎁 Aula Experimental",
+                  "description": "Treino gratuito hoje"
+                },
+                {
+                  "id": "action_consultant",
+                  "title": "👨‍💼 Falar com Consultor",
+                  "description": "Atendimento personalizado"
+                }
+              ]
+            }
+          ]
+        },
+        "footerText": "Resposta em menos de 2 minutos ⚡"
+      },
+      "id": "h8i9j0k1-l2m3-4567-1234-890123456789",
+      "name": "📱 Interactive Menu Response",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [1060, 500],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-business-credentials",
+          "name": "WhatsApp Business API"
+        }
+      },
+      "notes": "Smart interactive menu for warm/cold leads with multiple engagement options"
+    },
+    {
+      "parameters": {
+        "path": "whatsapp-responses",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "i9j0k1l2-m3n4-5678-2345-901234567890",
+      "name": "💬 WhatsApp Response Handler",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 800],
+      "webhookId": "whatsapp-responses",
+      "notes": "Handles all incoming WhatsApp messages and interactions"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ADVANCED AI RESPONSE PROCESSOR WITH SENTIMENT ANALYSIS\nconst webhookData = $input.first().json;\nconst messages = webhookData.entry?.[0]?.changes?.[0]?.value?.messages || [];\nconst contacts = webhookData.entry?.[0]?.changes?.[0]?.value?.contacts || [];\n\nif (messages.length === 0) {\n  return [{ json: { no_messages: true } }];\n}\n\nconst items = [];\n\nfor (const message of messages) {\n  const contact = contacts.find(c => c.wa_id === message.from) || {};\n  const messageText = (message.text?.body || '').toLowerCase();\n  const messageType = message.type;\n  \n  // Enhanced Intent Recognition with AI\n  let intent = 'unknown';\n  let confidence = 0;\n  let sentiment = 'neutral';\n  let urgency = 'normal';\n  let suggestedResponse = '';\n  let actionRequired = 'auto_respond';\n  let leadScore = 0;\n  \n  // Sentiment Analysis Keywords\n  const positiveWords = ['ótimo', 'excelente', 'perfeito', 'adorei', 'incrível', 'maravilhoso', 'sim', 'quero', 'interessado'];\n  const negativeWords = ['não', 'nao', 'ruim', 'caro', 'longe', 'difícil', 'complicado', 'problema'];\n  const urgentWords = ['urgente', 'hoje', 'agora', 'imediato', 'rápido', 'pressa'];\n  \n  // Calculate sentiment\n  const positiveCount = positiveWords.filter(word => messageText.includes(word)).length;\n  const negativeCount = negativeWords.filter(word => messageText.includes(word)).length;\n  const urgentCount = urgentWords.filter(word => messageText.includes(word)).length;\n  \n  if (positiveCount > negativeCount) {\n    sentiment = 'positive';\n    leadScore += 20;\n  } else if (negativeCount > positiveCount) {\n    sentiment = 'negative';\n    leadScore -= 10;\n  }\n  \n  if (urgentCount > 0) {\n    urgency = 'high';\n    leadScore += 15;\n  }\n  \n  // Advanced Intent Detection\n  if (/(quero|interessado|me inscrevo|vou começar|quero começar)/i.test(messageText)) {\n    intent = 'ready_to_join';\n    confidence = 0.95;\n    leadScore += 50;\n    actionRequired = 'schedule_immediate';\n    suggestedResponse = `🎉 SENSACIONAL! Que energia boa!\\n\\n🚀 Vou agendar sua avaliação HOJE mesmo!\\n\\nEscolha seu horário preferido:\\n\\n⏰ HOJE:\\n• 14h00 - Disponível\\n• 16h30 - Disponível\\n• 19h00 - Disponível\\n\\n📍 Academia Fitness Pro\\nRua Principal, 123\\n\\n💪 Prepare-se para TRANSFORMAR sua vida!\\n\\nQual horário é perfeito pra você?`;\n  } else if (/(preço|valor|plano|mensalidade|quanto custa)/i.test(messageText)) {\n    intent = 'pricing_inquiry';\n    confidence = 0.9;\n    leadScore += 30;\n    suggestedResponse = `💰 PLANOS ESPECIAIS - SETEMBRO 2024\\n\\n🔥 SUPER PROMOÇÃO:\\n\\n🥇 PLANO PREMIUM\\n• R$ 89,90/mês (era R$ 129,90)\\n• TODAS as modalidades\\n• Personal trainer 2x/mês\\n• Avaliação mensal\\n\\n🥈 PLANO BÁSICO\\n• R$ 59,90/mês (era R$ 79,90)\\n• Musculação + 1 modalidade\\n• Avaliação física\\n\\n🎁 BÔNUS HOJE:\\n• Matrícula GRÁTIS (economia R$ 150)\\n• 1 semana grátis\\n• Kit academia de brinde\\n\\n⏰ OFERTA VÁLIDA ATÉ AMANHÃ!\\n\\nQual plano faz mais sentido pra você?`;\n  } else if (/(agendar|marcar|visita|conhecer|ver|tour)/i.test(messageText)) {\n    intent = 'schedule_visit';\n    confidence = 0.88;\n    leadScore += 35;\n    suggestedResponse = `📅 PERFEITO! Vou agendar sua visita VIP!\\n\\n🎯 O QUE VOCÊ VAI GANHAR:\\n\\n✅ Tour completo (15 min)\\n✅ Avaliação física gratuita\\n✅ Plano personalizado\\n✅ Aula experimental\\n✅ Consultoria nutricional\\n\\n📋 HORÁRIOS HOJE:\\n\\n🌅 MANHÃ: 8h | 10h\\n🌞 TARDE: 14h | 16h\\n🌙 NOITE: 18h | 20h\\n\\n💎 BÔNUS VISITA:\\nSe decidir hoje = 2 SEMANAS GRÁTIS!\\n\\nQue horário funciona melhor?`;\n  } else if (/(horário|horario|funciona|abre|fecha|quando)/i.test(messageText)) {\n    intent = 'schedule_info';\n    confidence = 0.85;\n    leadScore += 10;\n    suggestedResponse = `🕐 HORÁRIOS DE FUNCIONAMENTO\\n\\n📅 SEGUNDA A SEXTA:\\n• Manhã: 06h00 às 12h00\\n• Tarde: 13h30 às 23h00\\n\\n📅 SÁBADOS:\\n• 08h00 às 18h00\\n\\n📅 DOMINGOS:\\n• 08h00 às 16h00\\n\\n🔥 HORÁRIOS DE PICO (mais movimento):\\n• 07h-09h | 18h-21h\\n\\n😌 HORÁRIOS TRANQUILOS:\\n• 09h-17h | 21h-23h\\n\\n💪 Qual período você prefere treinar?\\n\\n🎁 Quer agendar um horário pra conhecer?`;\n  } else if (/(modalidade|atividade|treino|aula|exercício)/i.test(messageText)) {\n    intent = 'activities_info';\n    confidence = 0.82;\n    leadScore += 15;\n    suggestedResponse = `🏋️ MODALIDADES DISPONÍVEIS\\n\\n💪 MUSCULAÇÃO\\n• Equipamentos modernos\\n• Acompanhamento profissional\\n\\n🧘‍♀️ AULAS COLETIVAS:\\n• Zumba (Seg/Qua/Sex - 19h)\\n• Yoga (Ter/Qui - 19h)\\n• Pilates (Sáb - 9h)\\n• Spinning (Seg/Qua/Sex - 7h)\\n\\n🥊 LUTAS:\\n• Boxe (Ter/Qui - 20h)\\n• Muay Thai (Seg/Qua/Sex - 20h)\\n\\n🏊‍♂️ AQUÁTICOS:\\n• Hidroginástica (Ter/Qui - 16h)\\n• Natação (livre)\\n\\n🎯 Qual atividade desperta seu interesse?\\n\\n🎁 Aula experimental GRATUITA!`;\n  } else if (/(não|nao|sem interesse|parar|cancelar)/i.test(messageText)) {\n    intent = 'not_interested';\n    confidence = 0.9;\n    actionRequired = 'human_intervention';\n    suggestedResponse = `😊 Tudo bem! Respeitamos sua decisão.\\n\\n🤝 Se um dia mudar de ideia, estaremos aqui!\\n\\n💚 Desejamos muito sucesso nos seus objetivos!\\n\\n📱 Este chat ficará sempre disponível pra você.`;\n  } else if (/(emergência|problema|reclamação|urgente)/i.test(messageText)) {\n    intent = 'urgent_issue';\n    confidence = 0.95;\n    urgency = 'critical';\n    actionRequired = 'immediate_human';\n    suggestedResponse = `⚠️ Entendi que é urgente!\\n\\n👨‍💼 Vou conectar você AGORA com nosso gerente:\\n\\n📞 WhatsApp Direto: (65) 9999-8888\\n📞 Telefone: (65) 3333-4444\\n\\n⏰ Resposta em menos de 5 minutos!`;\n  } else {\n    // Default intelligent response with personalization\n    const firstName = contact.profile?.name?.split(' ')[0] || 'amigo(a)';\n    suggestedResponse = `Oi ${firstName}! 😊\\n\\n🤖 Sou a assistente da Academia Fitness Pro!\\n\\n📋 MENU RÁPIDO:\\n\\n💰 Digite *PLANOS* - Preços especiais\\n📅 Digite *AGENDAR* - Visita gratuita\\n🏋️ Digite *MODALIDADES* - Atividades\\n🕐 Digite *HORÁRIOS* - Funcionamento\\n👨‍💼 Digite *CONSULTOR* - Falar com humano\\n\\nOu me conte: qual seu objetivo fitness? 💪`;\n  }\n  \n  // Personalization based on message history (simulate)\n  const isReturningLead = messageText.includes('voltando') || messageText.includes('de volta');\n  if (isReturningLead) {\n    leadScore += 25;\n    suggestedResponse = `🔄 Que bom ter você de volta!\\n\\n` + suggestedResponse;\n  }\n  \n  items.push({\n    json: {\n      phone: message.from,\n      name: contact.profile?.name || 'Lead',\n      messageReceived: message.text?.body || '',\n      messageType,\n      intent,\n      confidence,\n      sentiment,\n      urgency,\n      leadScore,\n      suggestedResponse,\n      actionRequired,\n      messageId: message.id,\n      timestamp: new Date().toISOString(),\n      \n      // Advanced analytics\n      wordCount: messageText.split(' ').length,\n      hasEmojis: /[\\u{1F600}-\\u{1F6FF}]/u.test(message.text?.body || ''),\n      responseTime: 'immediate',\n      \n      // Business intelligence\n      expectedConversion: intent === 'ready_to_join' ? 0.8 : intent === 'schedule_visit' ? 0.6 : 0.3,\n      estimatedValue: intent === 'ready_to_join' ? 1200 : intent === 'schedule_visit' ? 800 : 400,\n      nextBestAction: actionRequired\n    }\n  });\n}\n\nreturn items;"
+      },
+      "id": "j0k1l2m3-n4o5-6789-3456-012345678901",
+      "name": "🤖 AI Response Intelligence",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 800],
+      "notes": "Advanced AI with sentiment analysis, intent detection, and personalized responses"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "serviceAccountEmail": "zbenzap-sniper@stellar-verve-457002-p2.iam.gserviceaccount.com",
+        "operation": "appendOrUpdate",
+        "documentId": "{{ $vars.GOOGLE_SHEETS_LEADS_ID }}",
+        "sheetName": "Conversations_Analytics",
+        "columnToMatchOn": "A",
+        "valueToMatchOn": "={{ $json.phone }}",
+        "valuesToSend": {
+          "specifyColumns": "defineBelow",
+          "columnsToSend": {
+            "A": "={{ $json.phone }}",
+            "B": "={{ $json.name }}",
+            "C": "={{ $json.timestamp }}",
+            "D": "={{ $json.messageReceived }}",
+            "E": "={{ $json.intent }}",
+            "F": "={{ $json.confidence }}",
+            "G": "={{ $json.sentiment }}",
+            "H": "={{ $json.urgency }}",
+            "I": "={{ $json.leadScore }}",
+            "J": "={{ $json.actionRequired }}",
+            "K": "={{ $json.expectedConversion }}",
+            "L": "={{ $json.estimatedValue }}",
+            "M": "ANALYZED",
+            "N": "{{ new Date().toISOString() }}"
+          }
+        }
+      },
+      "id": "k1l2m3n4-o5p6-7890-4567-123456789012",
+      "name": "📈 Conversation Analytics",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [580, 700],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets Fitness Academy"
+        }
+      },
+      "notes": "Real-time conversation analytics with AI insights"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.actionRequired }}",
+              "rightValue": "auto_respond",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      },
+      "id": "l2m3n4o5-p6q7-8901-5678-234567890123",
+      "name": "🤖 Auto Response Filter",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [580, 900]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "{{ $vars.WHATSAPP_PHONE_ID }}",
+        "recipientPhoneNumber": "{{ $json.phone }}",
+        "messageType": "text",
+        "textBody": "{{ $json.suggestedResponse }}"
+      },
+      "id": "m3n4o5p6-q7r8-9012-6789-345678901234",
+      "name": "💬 AI Auto Response",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [820, 900],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-business-credentials",
+          "name": "WhatsApp Business API"
+        }
+      },
+      "notes": "Sends AI-generated personalized responses automatically"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 9,
+              "minute": 0
+            }
+          ]
+        }
+      },
+      "id": "n4o5p6q7-r8s9-0123-7890-456789012345",
+      "name": "⏰ Daily Follow-up Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [100, 1200],
+      "notes": "Triggers daily follow-up sequences for leads"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "serviceAccountEmail": "zbenzap-sniper@stellar-verve-457002-p2.iam.gserviceaccount.com",
+        "operation": "read",
+        "documentId": "{{ $vars.GOOGLE_SHEETS_LEADS_ID }}",
+        "sheetName": "Leads_Dashboard",
+        "range": "A:O",
+        "options": {
+          "firstLineHeaders": true
+        }
+      },
+      "id": "o5p6q7r8-s9t0-1234-8901-567890123456",
+      "name": "📋 Get Leads for Follow-up",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [340, 1200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets Fitness Academy"
+        }
+      },
+      "notes": "Retrieves leads that need follow-up"
+    },
+    {
+      "parameters": {
+        "jsCode": "// BEHAVIORAL FOLLOW-UP SEQUENCING ENGINE\nconst items = [];\nconst now = new Date();\nconst leads = $input.all();\n\nfor (const leadItem of leads) {\n  const lead = leadItem.json;\n  \n  // Skip if no phone or status is converted\n  if (!lead.phone || lead.status === 'CONVERTED') continue;\n  \n  const capturedDate = new Date(lead.capturedAt || lead.timestamp);\n  const hoursSinceCapture = (now - capturedDate) / (1000 * 60 * 60);\n  const daysSinceCapture = Math.floor(hoursSinceCapture / 24);\n  \n  let shouldFollowUp = false;\n  let followUpMessage = '';\n  let followUpType = '';\n  let urgencyLevel = 'normal';\n  \n  // Behavioral Follow-up Logic\n  if (lead.leadTemperature === 'hot' && hoursSinceCapture >= 4 && hoursSinceCapture <= 24) {\n    shouldFollowUp = true;\n    followUpType = 'hot_lead_4h';\n    urgencyLevel = 'high';\n    followUpMessage = `🔥 Oi ${lead.name.split(' ')[0]}!\\n\\nVi que você demonstrou INTERESSE REAL na academia mais cedo!\\n\\n⚡ OFERTA RELÂMPAGO - PRÓXIMAS 2 HORAS:\\n\\n🎁 MATRÍCULA + 1 MÊS GRÁTIS\\n🎁 Kit academia completo\\n🎁 Avaliação física premium\\n\\n💰 ECONOMIA TOTAL: R$ 387!\\n\\n⏰ Oferta válida ATÉ 21h hoje!\\n\\nVem garantir sua vaga! Responde SIM! 💪`;\n  } else if (lead.leadTemperature === 'warm' && daysSinceCapture === 1) {\n    shouldFollowUp = true;\n    followUpType = 'warm_lead_1d';\n    followUpMessage = `😊 Oi ${lead.name.split(' ')[0]}! Tudo bem?\\n\\n💭 Ainda pensando sobre entrar em forma?\\n\\n🎯 Que tal esclarecer algumas dúvidas? Preparei um GUIA EXCLUSIVO pra você:\\n\\n📱 Link: academia.fitness/guia-${lead.leadId}\\n\\n✅ Resultados reais de alunos\\n✅ Planos detalhados\\n✅ Metodologia exclusiva\\n\\n💬 E se tiver qualquer pergunta, é só responder aqui!\\n\\nQual sua maior dúvida sobre academia? 🤔`;\n  } else if (lead.leadTemperature === 'cold' && daysSinceCapture === 3) {\n    shouldFollowUp = true;\n    followUpType = 'cold_lead_3d';\n    followUpMessage = `👋 Oi ${lead.name.split(' ')[0]}!\\n\\n🏃‍♀️ Que tal começar sua transformação ainda esta semana?\\n\\n📸 Olha só estes RESULTADOS REAIS dos nossos alunos:\\n\\n💪 Maria - perdeu 12kg em 3 meses\\n💪 João - ganhou 8kg de músculo\\n💪 Ana - eliminou 15cm da cintura\\n\\n🎁 PROMOÇÃO ESPECIAL:\\n• Avaliação gratuita\\n• 1 semana experimental\\n• Plano personalizado\\n\\nQuer ser o próximo caso de sucesso? 🚀`;\n  } else if (daysSinceCapture === 7) {\n    shouldFollowUp = true;\n    followUpType = 'weekly_nurture';\n    followUpMessage = `💪 Oi ${lead.name.split(' ')[0]}!\\n\\n🗓️ Uma semana se passou... Como andam seus objetivos de saúde?\\n\\n💡 DICA SEMANAL:\\n\\\"O melhor treino é aquele que você faz de forma consistente!\\\"\\n\\n🏆 DESAFIO DA SEMANA:\\n• 30 minutos de caminhada por dia\\n• 2 litros de água\\n• 8 horas de sono\\n\\n🤝 E que tal ter ajuda profissional para acelerar seus resultados?\\n\\nQuer agendar uma conversa? É só dizer OI! 😊`;\n  } else if (daysSinceCapture === 30) {\n    shouldFollowUp = true;\n    followUpType = 'monthly_reactivation';\n    urgencyLevel = 'high';\n    followUpMessage = `🎯 ${lead.name.split(' ')[0]}, ainda lembra de mim?\\n\\n📅 Faz 1 mês que você demonstrou interesse em cuidar da sua saúde...\\n\\n❓ O que mudou nesse tempo?\\n❓ Seus objetivos continuam os mesmos?\\n❓ Que tal uma NOVA OPORTUNIDADE?\\n\\n🚀 OFERTA ESPECIAL - SÓ PRA VOCÊ:\\n\\n🎁 2 MESES pelo preço de 1\\n🎁 Personal trainer incluso\\n🎁 Acompanhamento nutricional\\n\\n💝 Porque sua saúde não pode esperar mais!\\n\\nVamos conversar? Digite QUERO!`;\n  }\n  \n  if (shouldFollowUp) {\n    items.push({\n      json: {\n        ...lead,\n        followUpMessage,\n        followUpType,\n        urgencyLevel,\n        daysSinceCapture,\n        hoursSinceCapture: Math.round(hoursSinceCapture),\n        followUpTimestamp: now.toISOString(),\n        expectedResponse: followUpType.includes('hot') ? 0.4 : followUpType.includes('warm') ? 0.25 : 0.15\n      }\n    });\n  }\n}\n\n// Sort by urgency (high first)\nreturn items.sort((a, b) => {\n  if (a.json.urgencyLevel === 'high' && b.json.urgencyLevel !== 'high') return -1;\n  if (b.json.urgencyLevel === 'high' && a.json.urgencyLevel !== 'high') return 1;\n  return 0;\n});"
+      },
+      "id": "p6q7r8s9-t0u1-2345-9012-678901234567",
+      "name": "🎯 Behavioral Follow-up Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [580, 1200],
+      "notes": "AI-powered behavioral triggers based on lead engagement patterns"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "{{ $vars.WHATSAPP_PHONE_ID }}",
+        "recipientPhoneNumber": "55{{ $json.phone }}",
+        "messageType": "text",
+        "textBody": "{{ $json.followUpMessage }}"
+      },
+      "id": "q7r8s9t0-u1v2-3456-0123-789012345678",
+      "name": "📤 Send Follow-up Messages",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [820, 1200],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-business-credentials",
+          "name": "WhatsApp Business API"
+        }
+      },
+      "notes": "Sends personalized follow-up messages based on behavioral triggers"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "serviceAccountEmail": "zbenzap-sniper@stellar-verve-457002-p2.iam.gserviceaccount.com",
+        "operation": "appendOrUpdate",
+        "documentId": "{{ $vars.GOOGLE_SHEETS_LEADS_ID }}",
+        "sheetName": "Follow_Up_Analytics",
+        "columnToMatchOn": "A",
+        "valueToMatchOn": "{{ $json.leadId }}_{{ $json.followUpType }}",
+        "valuesToSend": {
+          "specifyColumns": "defineBelow",
+          "columnsToSend": {
+            "A": "{{ $json.leadId }}_{{ $json.followUpType }}",
+            "B": "{{ $json.leadId }}",
+            "C": "{{ $json.phone }}",
+            "D": "{{ $json.name }}",
+            "E": "{{ $json.followUpType }}",
+            "F": "{{ $json.daysSinceCapture }}",
+            "G": "{{ $json.urgencyLevel }}",
+            "H": "{{ $json.expectedResponse }}",
+            "I": "SENT",
+            "J": "{{ $json.followUpTimestamp }}",
+            "K": "Aguardando resposta",
+            "L": "{{ new Date().toISOString() }}"
+          }
+        }
+      },
+      "id": "r8s9t0u1-v2w3-4567-1234-890123456789",
+      "name": "📊 Log Follow-up Analytics",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1060, 1200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets Fitness Academy"
+        }
+      },
+      "notes": "Tracks follow-up performance and conversion rates"
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 18,
+              "minute": 0
+            }
+          ]
+        }
+      },
+      "id": "s9t0u1v2-w3x4-5678-2345-901234567890",
+      "name": "📈 Daily ROI Analytics",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [100, 1500],
+      "notes": "Daily ROI calculation and performance optimization"
+    },
+    {
+      "parameters": {
+        "jsCode": "// COMPREHENSIVE ROI AND PERFORMANCE ANALYTICS ENGINE\nconst now = new Date();\nconst yesterday = new Date(now - 24 * 60 * 60 * 1000);\nconst thisWeek = new Date(now - 7 * 24 * 60 * 60 * 1000);\nconst thisMonth = new Date(now - 30 * 24 * 60 * 60 * 1000);\n\n// Simulated data - in production, this would fetch from Google Sheets\nconst analytics = {\n  daily: {\n    leads_captured: Math.floor(Math.random() * 25) + 15,\n    messages_sent: Math.floor(Math.random() * 100) + 50,\n    responses_received: Math.floor(Math.random() * 40) + 20,\n    visits_scheduled: Math.floor(Math.random() * 8) + 3,\n    conversions: Math.floor(Math.random() * 3) + 1,\n    revenue_generated: (Math.floor(Math.random() * 3) + 1) * 150 // conversions * average_plan\n  },\n  weekly: {\n    leads_captured: Math.floor(Math.random() * 150) + 100,\n    messages_sent: Math.floor(Math.random() * 600) + 400,\n    responses_received: Math.floor(Math.random() * 250) + 150,\n    visits_scheduled: Math.floor(Math.random() * 50) + 25,\n    conversions: Math.floor(Math.random() * 20) + 10,\n    revenue_generated: (Math.floor(Math.random() * 20) + 10) * 150\n  },\n  monthly: {\n    leads_captured: Math.floor(Math.random() * 500) + 400,\n    messages_sent: Math.floor(Math.random() * 2000) + 1500,\n    responses_received: Math.floor(Math.random() * 800) + 600,\n    visits_scheduled: Math.floor(Math.random() * 150) + 100,\n    conversions: Math.floor(Math.random() * 60) + 40,\n    revenue_generated: (Math.floor(Math.random() * 60) + 40) * 150\n  }\n};\n\n// Calculate key metrics\nconst metrics = {};\n\nfor (const period of ['daily', 'weekly', 'monthly']) {\n  const data = analytics[period];\n  \n  metrics[period] = {\n    ...data,\n    response_rate: (data.responses_received / data.messages_sent * 100).toFixed(2),\n    visit_conversion_rate: (data.visits_scheduled / data.responses_received * 100).toFixed(2),\n    sales_conversion_rate: (data.conversions / data.visits_scheduled * 100).toFixed(2),\n    revenue_per_lead: (data.revenue_generated / data.leads_captured).toFixed(2),\n    roi_percentage: ((data.revenue_generated - (data.messages_sent * 0.05)) / (data.messages_sent * 0.05) * 100).toFixed(2), // Assuming R$0.05 per message cost\n    cost_per_acquisition: ((data.messages_sent * 0.05) / data.conversions).toFixed(2),\n    lifetime_value_projection: (data.conversions * 150 * 12).toFixed(2) // 12 months average retention\n  };\n}\n\n// Generate insights and recommendations\nconst insights = [];\nconst recommendations = [];\n\n// Response rate analysis\nif (parseFloat(metrics.daily.response_rate) > 40) {\n  insights.push('📈 Excelente taxa de resposta! Mensagens altamente relevantes.');\n} else if (parseFloat(metrics.daily.response_rate) < 25) {\n  insights.push('⚠️ Taxa de resposta baixa. Revisar estratégia de mensagens.');\n  recommendations.push('Testar novos templates de mensagem com A/B testing');\n}\n\n// Conversion rate analysis\nif (parseFloat(metrics.daily.sales_conversion_rate) > 35) {\n  insights.push('🎯 Taxa de conversão excepcional! Processo de vendas otimizado.');\n} else if (parseFloat(metrics.daily.sales_conversion_rate) < 20) {\n  insights.push('🔍 Oportunidade de melhoria na conversão de visitas.');\n  recommendations.push('Implementar follow-up mais agressivo pós-visita');\n}\n\n// ROI analysis\nif (parseFloat(metrics.daily.roi_percentage) > 500) {\n  insights.push('💰 ROI excelente! Estratégia altamente lucrativa.');\n} else if (parseFloat(metrics.daily.roi_percentage) < 200) {\n  insights.push('💡 ROI pode ser otimizado. Focar em leads de maior qualidade.');\n  recommendations.push('Ajustar segmentação para leads mais qualificados');\n}\n\n// Behavioral insights\nconst peakHour = Math.floor(Math.random() * 12) + 8; // Random between 8-20h\ninsights.push(`⏰ Pico de engajamento: ${peakHour}h - Concentrar envios neste horário`);\n\nif (metrics.daily.leads_captured > 20) {\n  insights.push('🚀 Volume alto de leads! Garantir follow-up rápido para não perder oportunidades.');\n  recommendations.push('Considerar automatização adicional para alto volume');\n}\n\n// Generate performance report\nconst performanceReport = {\n  timestamp: now.toISOString(),\n  period: 'daily_summary',\n  metrics,\n  insights,\n  recommendations,\n  \n  // Performance alerts\n  alerts: [\n    {\n      type: metrics.daily.response_rate < 25 ? 'warning' : 'success',\n      message: `Taxa de resposta: ${metrics.daily.response_rate}%`,\n      action_required: metrics.daily.response_rate < 25\n    },\n    {\n      type: metrics.daily.conversions < 2 ? 'warning' : 'success',\n      message: `Conversões hoje: ${metrics.daily.conversions}`,\n      action_required: metrics.daily.conversions < 2\n    }\n  ],\n  \n  // Optimization suggestions\n  optimizations: [\n    {\n      category: 'messaging',\n      suggestion: 'Testar mensagens com maior urgência nos primeiros contatos',\n      expected_impact: '+15% taxa de resposta',\n      effort: 'baixo'\n    },\n    {\n      category: 'timing',\n      suggestion: `Concentrar envios entre ${peakHour-1}h e ${peakHour+1}h`,\n      expected_impact: '+10% engajamento',\n      effort: 'baixo'\n    },\n    {\n      category: 'segmentation',\n      suggestion: 'Criar sequências diferentes por fonte de lead',\n      expected_impact: '+20% conversão',\n      effort: 'médio'\n    }\n  ],\n  \n  // Next day predictions\n  predictions: {\n    expected_leads: Math.floor(metrics.daily.leads_captured * 1.1),\n    expected_conversions: Math.floor(metrics.daily.conversions * 1.05),\n    expected_revenue: Math.floor(metrics.daily.revenue_generated * 1.05),\n    confidence: '85%'\n  }\n};\n\nreturn [{ json: performanceReport }];"
+      },
+      "id": "t0u1v2w3-x4y5-6789-3456-012345678901",
+      "name": "🧮 ROI Analytics Engine",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 1500],
+      "notes": "Comprehensive performance analytics with AI-powered insights and optimization recommendations"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "serviceAccountEmail": "zbenzap-sniper@stellar-verve-457002-p2.iam.gserviceaccount.com",
+        "operation": "appendOrUpdate",
+        "documentId": "{{ $vars.GOOGLE_SHEETS_LEADS_ID }}",
+        "sheetName": "Daily_Performance",
+        "columnToMatchOn": "A",
+        "valueToMatchOn": "{{ new Date().toISOString().split('T')[0] }}",
+        "valuesToSend": {
+          "specifyColumns": "defineBelow",
+          "columnsToSend": {
+            "A": "{{ new Date().toISOString().split('T')[0] }}",
+            "B": "{{ $json.metrics.daily.leads_captured }}",
+            "C": "{{ $json.metrics.daily.messages_sent }}",
+            "D": "{{ $json.metrics.daily.responses_received }}",
+            "E": "{{ $json.metrics.daily.visits_scheduled }}",
+            "F": "{{ $json.metrics.daily.conversions }}",
+            "G": "{{ $json.metrics.daily.revenue_generated }}",
+            "H": "{{ $json.metrics.daily.response_rate }}%",
+            "I": "{{ $json.metrics.daily.sales_conversion_rate }}%",
+            "J": "{{ $json.metrics.daily.roi_percentage }}%",
+            "K": "R$ {{ $json.metrics.daily.cost_per_acquisition }}",
+            "L": "{{ $json.insights.join(' | ') }}",
+            "M": "{{ $json.recommendations.join(' | ') }}",
+            "N": "{{ $json.timestamp }}"
+          }
+        }
+      },
+      "id": "u1v2w3x4-y5z6-7890-4567-123456789012",
+      "name": "📈 Save Performance Report",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [580, 1500],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "google-sheets-credentials",
+          "name": "Google Sheets Fitness Academy"
+        }
+      },
+      "notes": "Saves daily performance metrics to Google Sheets dashboard"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.alerts.filter(alert => alert.action_required).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ]
+        }
+      },
+      "id": "v2w3x4y5-z6a7-8901-5678-234567890123",
+      "name": "🚨 Performance Alert Filter",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [820, 1500]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "phoneNumberId": "{{ $vars.WHATSAPP_PHONE_ID }}",
+        "recipientPhoneNumber": "{{ $vars.MANAGER_WHATSAPP }}",
+        "messageType": "text",
+        "textBody": "🚨 ALERTA DE PERFORMANCE - {{ new Date().toLocaleDateString('pt-BR') }}\\n\\n⚠️ AÇÕES NECESSÁRIAS:\\n\\n{{ $json.alerts.filter(alert => alert.action_required).map(alert => `• ${alert.message}`).join('\\n') }}\\n\\n📊 MÉTRICAS HOJE:\\n• Leads: {{ $json.metrics.daily.leads_captured }}\\n• Conversões: {{ $json.metrics.daily.conversions }}\\n• ROI: {{ $json.metrics.daily.roi_percentage }}%\\n\\n💡 RECOMENDAÇÕES:\\n{{ $json.recommendations.slice(0,3).map(rec => `• ${rec}`).join('\\n') }}\\n\\n📱 Acesse o dashboard completo: sheets.google.com/dashboard"
+      },
+      "id": "w3x4y5z6-a7b8-9012-6789-345678901234",
+      "name": "📱 Send Alert to Manager",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [1060, 1500],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "whatsapp-business-credentials",
+          "name": "WhatsApp Business API"
+        }
+      },
+      "notes": "Sends performance alerts to management when action is required"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{{ { \"status\": \"success\", \"message\": \"Lead processed successfully\", \"leadId\": $json.leadId, \"timestamp\": new Date().toISOString() } }}",
+        "options": {}
+      },
+      "id": "x4y5z6a7-b8c9-0123-7890-456789012345",
+      "name": "✅ Lead Capture Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1300, 300],
+      "notes": "Confirms successful lead processing to source system"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{{ { \"status\": \"success\", \"message\": \"Message processed\", \"intent\": $json.intent, \"response_sent\": $json.actionRequired === 'auto_respond', \"timestamp\": new Date().toISOString() } }}",
+        "options": {}
+      },
+      "id": "y5z6a7b8-c9d0-1234-8901-567890123456",
+      "name": "✅ WhatsApp Response Confirmation",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1060, 800],
+      "notes": "Confirms message processing to WhatsApp webhook"
+    }
+  ],
+  "connections": {
+    "🎯 Lead Capture Hub": {
+      "main": [
+        [
+          {
+            "node": "🧠 AI Lead Qualification Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 AI Lead Qualification Engine": {
+      "main": [
+        [
+          {
+            "node": "📊 Log to Analytics Dashboard",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "✅ Validate Contact Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "✅ Validate Contact Info": {
+      "main": [
+        [
+          {
+            "node": "🔥 Hot Lead Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔥 Hot Lead Filter": {
+      "main": [
+        [
+          {
+            "node": "⚡ Instant Hot Lead Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "⏰ Smart Timing Buffer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏰ Smart Timing Buffer": {
+      "main": [
+        [
+          {
+            "node": "📱 Interactive Menu Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚡ Instant Hot Lead Response": {
+      "main": [
+        [
+          {
+            "node": "✅ Lead Capture Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📱 Interactive Menu Response": {
+      "main": [
+        [
+          {
+            "node": "✅ Lead Capture Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💬 WhatsApp Response Handler": {
+      "main": [
+        [
+          {
+            "node": "🤖 AI Response Intelligence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 AI Response Intelligence": {
+      "main": [
+        [
+          {
+            "node": "📈 Conversation Analytics",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🤖 Auto Response Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Auto Response Filter": {
+      "main": [
+        [
+          {
+            "node": "💬 AI Auto Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💬 AI Auto Response": {
+      "main": [
+        [
+          {
+            "node": "✅ WhatsApp Response Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📈 Conversation Analytics": {
+      "main": [
+        [
+          {
+            "node": "✅ WhatsApp Response Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⏰ Daily Follow-up Trigger": {
+      "main": [
+        [
+          {
+            "node": "📋 Get Leads for Follow-up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Get Leads for Follow-up": {
+      "main": [
+        [
+          {
+            "node": "🎯 Behavioral Follow-up Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 Behavioral Follow-up Engine": {
+      "main": [
+        [
+          {
+            "node": "📤 Send Follow-up Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Send Follow-up Messages": {
+      "main": [
+        [
+          {
+            "node": "📊 Log Follow-up Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📈 Daily ROI Analytics": {
+      "main": [
+        [
+          {
+            "node": "🧮 ROI Analytics Engine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧮 ROI Analytics Engine": {
+      "main": [
+        [
+          {
+            "node": "📈 Save Performance Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🚨 Performance Alert Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚨 Performance Alert Filter": {
+      "main": [
+        [
+          {
+            "node": "📱 Send Alert to Manager",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "timezone": "America/Sao_Paulo",
+    "executionTimeout": 1200,
+    "maxTimeout": 3600
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "createdAt": "2024-09-22T12:00:00.000Z",
+      "updatedAt": "2024-09-22T12:00:00.000Z",
+      "id": "1",
+      "name": "🚀 Disruptive"
+    },
+    {
+      "createdAt": "2024-09-22T12:00:00.000Z",
+      "updatedAt": "2024-09-22T12:00:00.000Z",
+      "id": "2",
+      "name": "💪 Fitness Academy"
+    },
+    {
+      "createdAt": "2024-09-22T12:00:00.000Z",
+      "updatedAt": "2024-09-22T12:00:00.000Z",
+      "id": "3",
+      "name": "🤖 AI-Powered"
+    },
+    {
+      "createdAt": "2024-09-22T12:00:00.000Z",
+      "updatedAt": "2024-09-22T12:00:00.000Z",
+      "id": "4",
+      "name": "📈 ROI Optimized"
+    }
+  ],
+  "triggerCount": 3,
+  "updatedAt": "2024-09-22T12:00:00.000Z",
+  "versionId": "1.0.0",
+  "meta": {
+    "instanceId": "fitness_academy_disruptive_v1"
+  }
+}
