@@ -32,6 +32,10 @@ jobs:
       - name: Install dependencies
         working-directory: ./fullforce-site
         run: npm ci
+      - name: Lint
+        working-directory: ./fullforce-site
+        run: npm run lint
+        continue-on-error: true
       - name: Build
         working-directory: ./fullforce-site
         run: npm run build
