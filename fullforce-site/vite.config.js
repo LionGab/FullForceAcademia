@@ -4,9 +4,12 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // Para GitHub Pages: use o nome do repositório
-  // Exemplo: se o repo for github.com/usuario/fullforce-site, use '/fullforce-site/'
-  base: process.env.GITHUB_ACTIONS ? '/fullforce-site/' : '/',
+  // Base path para GitHub Pages
+  // Se o repo for github.com/usuario/fullforce-site, use '/fullforce-site/'
+  // Se for github.com/usuario/usuario.github.io, use '/'
+  base: process.env.GITHUB_ACTIONS 
+    ? (process.env.GITHUB_REPOSITORY?.split('/')[1] || '/fullforce-site/').replace(/^/, '/').replace(/\/$/, '') + '/'
+    : '/',
   server: {
     port: 3000,
     open: true,
