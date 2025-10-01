@@ -1,1 +1,11 @@
-/*    /index.html   200
+# SEO redirects
+/home               /                   301
+/contato            /#contato           301
+/planos             /#planos            301
+/sobre              /#sobre             301
+
+# WhatsApp direct
+/whatsapp           https://wa.me/5566991000808?text=Olá!%20Gostaria%20de%20saber%20mais%20sobre%20a%20academia    301
+
+# SPA fallback (OBRIGATÓRIO)
+/*                  /index.html         200
