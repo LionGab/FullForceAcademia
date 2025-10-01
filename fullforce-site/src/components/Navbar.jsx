@@ -40,7 +40,7 @@ const Navbar = () => {
             </a>
           ))}
           <a
-            href="https://wa.me/5566999570328?text=Olá,%20vim%20do%20site!"
+            href="https://wa.me/5566991080808?text=Olá,%20vim%20do%20site!"
             target="_blank"
             rel="noopener noreferrer"
             className="navbar-cta"

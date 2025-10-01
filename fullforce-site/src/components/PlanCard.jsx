@@ -9,7 +9,7 @@ const PlanCard = ({
   isPopular,
   whatsappMessage
 }) => {
-  const whatsappNumber = "5566999570328";
+  const whatsappNumber = "5566991080808";
 
   const handleClick = () => {
     const fullMessage = `${whatsappMessage} | Origem: plan_card`;

@@ -490,6 +490,28 @@ body {
   color: #fff;
 }
 
+/* Video Section */
+.video-section {
+  padding: 100px 0;
+  background: linear-gradient(180deg, #0a0a0a 0%, #000 100%);
+}
+
+.video-container {
+  max-width: 900px;
+  margin: 0 auto;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 60px rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.inauguration-video {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #000;
+}
+
 @media (max-width: 768px) {
   .hero-cta {
     flex-direction: column;

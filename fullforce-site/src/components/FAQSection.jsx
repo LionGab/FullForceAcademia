@@ -75,7 +75,7 @@ const FAQSection = () => {
         <div className="faq-cta">
           <p>Não encontrou sua resposta?</p>
           <a
-            href="https://wa.me/5566999570328?text=Olá,%20tenho%20uma%20dúvida!"
+            href="https://wa.me/5566991080808?text=Olá,%20tenho%20uma%20dúvida!"
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-primary"

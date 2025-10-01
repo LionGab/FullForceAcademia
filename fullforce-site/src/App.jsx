@@ -28,7 +28,7 @@ function App() {
           <div className="hero-content">
             <div className="hero-badge animate-fade-in">
               <span className="badge-pulse"></span>
-              🔥 #1 ACADEMIA EM MATUPÁ-MT
+              🔥 TOP 1 ACADEMIA EM MATUPÁ-MT
             </div>
             <h1 className="hero-title animate-slide-up">
               Full Force Academia
@@ -39,7 +39,7 @@ function App() {
               equipe especializada para ajudar você a alcançar seus objetivos.
             </p>
             <div className="hero-cta animate-slide-up" style={{ animationDelay: '0.4s' }}>
-              <a href="https://wa.me/5566999570328?text=Olá,%20vim%20do%20site%20e%20quero%20agendar%20uma%20aula%20teste%20grátis!" target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-glow">
+              <a href="https://wa.me/5566991080808?text=Olá,%20vim%20do%20site%20e%20quero%20agendar%20uma%20aula%20teste%20grátis!" target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-glow">
                 <span className="btn-icon">🎯</span>
                 Agendar Aula Teste Grátis
               </a>
@@ -77,6 +77,26 @@ function App() {
         </div>
       </section>
 
+      <section className="video-section">
+        <div className="container">
+          <div className="section-header">
+            <div className="badge">NOSSA HISTÓRIA</div>
+            <h2>
+              <span className="highlight">Inauguração</span> Full Force Academia
+            </h2>
+            <p className="section-description">
+              Veja como foi o início da nossa jornada em Matupá-MT
+            </p>
+          </div>
+          <div className="video-container">
+            <video controls className="inauguration-video" poster="/vite.svg">
+              <source src="/inauguracao.mp4" type="video/mp4" />
+              Seu navegador não suporta o elemento de vídeo.
+            </video>
+          </div>
+        </div>
+      </section>
+
       <StatsSection />
 
       <ServicesSection />
@@ -95,7 +115,7 @@ function App() {
           <div className="cta-content">
             <h2>Pronto para transformar seu corpo e sua vida?</h2>
             <p>Agende hoje mesmo sua aula teste grátis e conheça nossa estrutura!</p>
-            <a href="https://wa.me/5566999570328?text=Olá,%20vim%20do%20site%20e%20quero%20agendar%20uma%20aula%20teste%20grátis!" target="_blank" rel="noopener noreferrer" className="btn btn-large btn-pulse">
+            <a href="https://wa.me/5566991080808?text=Olá,%20vim%20do%20site%20e%20quero%20agendar%20uma%20aula%20teste%20grátis!" target="_blank" rel="noopener noreferrer" className="btn btn-large btn-pulse">
               Agendar Aula Teste Grátis no WhatsApp
             </a>
           </div>
@@ -146,7 +166,7 @@ function App() {
                   <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                   </svg>
-                  (66) 99957-0328
+                  (66) 99108-0808
                 </li>
                 <li>
                   <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">

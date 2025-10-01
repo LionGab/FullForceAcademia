@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 const WhatsAppButton = ({ message = "Olá, vim do site e quero agendar uma aula teste!" }) => {
   const [isVisible, setIsVisible] = useState(true);
-  const whatsappNumber = "5566999570328";
+  const whatsappNumber = "5566991080808";
 
   const createWhatsAppLink = () => {
     const fullMessage = `${message} | Origem: floating_button`;
