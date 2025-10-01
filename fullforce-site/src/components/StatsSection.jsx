@@ -5,9 +5,9 @@ const StatsSection = () => {
   const sectionRef = useRef(null);
 
   const stats = [
-    { value: 1300, suffix: '+', label: 'Alunos Ativos', icon: '👥' },
+    { value: 650, suffix: '+', label: 'Alunos Ativos', icon: '👥' },
     { value: 8, suffix: ' anos', label: 'De Experiência', icon: '🏆' },
-    { value: 15, suffix: '+', label: 'Modalidades', icon: '🎯' },
+    { value: 300, suffix: 'm²', label: 'de Estrutura', icon: '🏋️' },
     { value: 98, suffix: '%', label: 'Satisfação', icon: '⭐' }
   ];
 

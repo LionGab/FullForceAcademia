@@ -7,6 +7,7 @@ import BenefitsSection from './components/BenefitsSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import FAQSection from './components/FAQSection';
 import WhatsAppButton from './components/WhatsAppButton';
+import Logo from './components/Logo';
 import { initAnalytics } from './utils/analytics';
 import './styles/main.css';
 
@@ -70,8 +71,7 @@ function App() {
           </div>
         </div>
         <div className="hero-scroll">
-          <span>Role para descobrir</span>
-          <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M19 12l-7 7-7-7"/>
           </svg>
         </div>
@@ -126,10 +126,9 @@ function App() {
         <div className="container">
           <div className="footer-content">
             <div className="footer-col footer-about">
-              <h3>
-                <span className="footer-logo">💪</span>
-                Full Force Academia
-              </h3>
+              <div style={{ marginBottom: '16px' }}>
+                <Logo showText={true} width={160} />
+              </div>
               <p>A melhor academia de Matupá-MT. Transformando vidas através do fitness desde 2016.</p>
               <div className="footer-social">
                 <a href="https://instagram.com/fullforceacademia" target="_blank" rel="noopener noreferrer" aria-label="Instagram">

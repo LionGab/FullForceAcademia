@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import Logo from './Logo';
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -23,10 +24,9 @@ const Navbar = () => {
   return (
     <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
       <div className="navbar-container">
-        <div className="navbar-logo">
-          <span className="logo-icon">💪</span>
-          <span className="logo-text">Full Force</span>
-        </div>
+        <a href="#home" className="navbar-logo">
+          <Logo showText={true} width={140} />
+        </a>
 
         <div className={`navbar-menu ${mobileMenuOpen ? 'active' : ''}`}>
           {navLinks.map((link, index) => (
