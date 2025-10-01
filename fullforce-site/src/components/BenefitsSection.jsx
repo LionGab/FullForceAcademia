@@ -9,7 +9,7 @@ const BenefitsSection = () => {
     {
       icon: '👨‍🏫',
       title: 'Profissionais Qualificados',
-      description: 'Equipe de instrutores e personal trainers com certificação nacional',
+      description: 'Equipe de instrutores especializados com certificação nacional',
       color: '#3b82f6'
     },
     {

@@ -18,7 +18,7 @@ const FAQSection = () => {
     },
     {
       question: 'Vocês oferecem treino personalizado?',
-      answer: 'Sim! Todos os alunos recebem uma avaliação física e plano de treino personalizado. Também oferecemos acompanhamento com Personal Trainer em todos os planos anuais.'
+      answer: 'Sim! Todos os alunos recebem uma avaliação física e plano de treino personalizado. Nossa equipe de instrutores acompanha sua evolução regularmente.'
     },
     {
       question: 'Qual o horário de funcionamento?',

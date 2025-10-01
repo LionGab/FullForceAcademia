@@ -3,38 +3,8 @@ const ServicesSection = () => {
     {
       icon: '🏋️',
       title: 'Musculação',
-      description: 'Equipamentos Technogym de última geração para treinos completos',
-      features: ['Pesos livres', 'Máquinas profissionais', 'Área de funcional']
-    },
-    {
-      icon: '🚴',
-      title: 'Spinning',
-      description: 'Aulas de bike indoor com instrutores qualificados e playlists motivacionais',
-      features: ['Bikes ergonômicas', 'Aulas dinâmicas', 'Turmas variadas']
-    },
-    {
-      icon: '🧘',
-      title: 'Aulas Coletivas',
-      description: 'Diversas modalidades para todos os níveis e objetivos',
-      features: ['Yoga', 'Pilates', 'Zumba', 'Aeróbica']
-    },
-    {
-      icon: '💪',
-      title: 'Personal Trainer',
-      description: 'Acompanhamento individualizado com profissionais especializados',
-      features: ['Treino personalizado', 'Avaliação física', 'Nutrição']
-    },
-    {
-      icon: '🥊',
-      title: 'Funcional',
-      description: 'Treinos funcionais para melhorar força, equilíbrio e resistência',
-      features: ['Circuitos', 'TRX', 'Kettlebell']
-    },
-    {
-      icon: '🏃',
-      title: 'CrossFit',
-      description: 'Treinos de alta intensidade para resultados rápidos',
-      features: ['WODs diários', 'Box equipado', 'Coaches certificados']
+      description: 'Equipamentos de última geração para treinos completos e eficazes',
+      features: ['Pesos livres', 'Máquinas profissionais', 'Área completa', 'Treinos personalizados']
     }
   ];
 
@@ -42,12 +12,12 @@ const ServicesSection = () => {
     <section id="servicos" className="services-section">
       <div className="container">
         <div className="section-header">
-          <div className="badge">NOSSAS MODALIDADES</div>
+          <div className="badge">NOSSA ESPECIALIDADE</div>
           <h2>
-            Mais de <span className="highlight">15 modalidades</span> para você
+            <span className="highlight">Musculação Completa</span> para seus objetivos
           </h2>
           <p className="section-description">
-            Equipamentos de ponta e profissionais qualificados para te ajudar a alcançar seus objetivos
+            Equipamentos de ponta e profissionais qualificados para te ajudar a alcançar seus resultados
           </p>
         </div>
 

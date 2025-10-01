@@ -35,8 +35,7 @@ function App() {
               <span className="hero-subtitle">Sua transformação começa aqui</span>
             </h1>
             <p className="hero-description animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              Academia completa em Matupá-MT com musculação, aulas coletivas,
-              spinning e personal trainer. Equipamentos de última geração e
+              Academia de musculação completa em Matupá-MT. Equipamentos de última geração e
               equipe especializada para ajudar você a alcançar seus objetivos.
             </p>
             <div className="hero-cta animate-slide-up" style={{ animationDelay: '0.4s' }}>

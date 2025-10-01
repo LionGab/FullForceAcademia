@@ -9,7 +9,7 @@ const PlansSection = () => {
       description: 'Acesso total e flexibilidade máxima',
       features: [
         'Acesso ilimitado à academia',
-        'Todas as modalidades incluídas',
+        'Musculação completa',
         'Flexibilidade total de horários',
         'Suporte da equipe especializada',
         'Uso de todos os equipamentos',
@@ -46,7 +46,7 @@ const PlansSection = () => {
         'Maior economia: 37% de desconto',
         'Avaliação física trimestral',
         'Acompanhamento nutricional GRÁTIS',
-        '1 sessão de Personal Trainer/mês',
+        'Treino personalizado',
         'Acesso a eventos exclusivos',
         '30 dias grátis por mês para um amigo',
         'Prioridade no agendamento'

@@ -16,21 +16,21 @@ const TestimonialsSection = () => {
       role: 'Aluno há 1 ano',
       image: '👨',
       rating: 5,
-      text: 'Excelente estrutura e professores qualificados. O personal training me ajudou a conquistar resultados que eu não imaginava possível. Recomendo muito!'
+      text: 'Excelente estrutura e professores qualificados. A musculação aqui me ajudou a conquistar resultados que eu não imaginava possível. Recomendo muito!'
     },
     {
       name: 'Ana Paula',
       role: 'Aluna há 3 anos',
       image: '👩‍🦰',
       rating: 5,
-      text: 'A Full Force mudou minha vida! Além de treinar, fiz amigos incríveis. As aulas coletivas são muito dinâmicas e motivadoras. Não troco por nada!'
+      text: 'A Full Force mudou minha vida! Além de treinar, fiz amigos incríveis. O ambiente é motivador e os equipamentos são de primeira. Não troco por nada!'
     },
     {
       name: 'Carlos Mendes',
       role: 'Aluno há 6 meses',
       image: '🧔',
       rating: 5,
-      text: 'Academia top! Equipamentos de primeira, ambiente limpo e organizado. Os treinos de crossfit são sensacionais. Melhor investimento que já fiz!'
+      text: 'Academia top! Equipamentos de primeira, ambiente limpo e organizado. Os treinos são sensacionais e os resultados aparecem rápido. Melhor investimento que já fiz!'
     }
   ];
 
