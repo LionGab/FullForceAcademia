@@ -1,8 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/FullForceAcademia/',
+  // REMOVER: base: '/FullForceAcademia/'
+  // Para Netlify, base: '/' é o padrão (não precisa declarar)
+  build: {
+    outDir: 'dist',
+    commonjsOptions: {
+      transformMixedEsModules: true
+    }
+  }
 })
