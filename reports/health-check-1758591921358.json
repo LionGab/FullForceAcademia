@@ -1,0 +1,78 @@
+{
+  "timestamp": "2025-09-23T01:45:21.357Z",
+  "system": {
+    "status": "checking",
+    "components": {}
+  },
+  "services": {
+    "waha": {
+      "url": "http://localhost:3000",
+      "status": "inactive"
+    },
+    "n8n": {
+      "url": "http://localhost:5678",
+      "status": "inactive"
+    },
+    "postgres": {
+      "status": "pending"
+    },
+    "redis": {
+      "status": "pending"
+    }
+  },
+  "mcps": {
+    "whatsappAutomation": {
+      "status": "active",
+      "message": "MCP operacional"
+    },
+    "gymAnalytics": {
+      "status": "active",
+      "message": "MCP operacional"
+    },
+    "n8nIntegration": {
+      "status": "active",
+      "message": "MCP operacional"
+    },
+    "leadSegmentation": {
+      "status": "active",
+      "message": "MCP operacional"
+    },
+    "conversionAnalytics": {
+      "status": "active",
+      "message": "MCP operacional"
+    }
+  },
+  "agents": {
+    "campaignMaster": {
+      "status": "active",
+      "message": "Agente operacional"
+    },
+    "segmentSpecialists": {
+      "vip": {
+        "status": "active",
+        "message": "Agente operacional"
+      },
+      "hot": {
+        "status": "active",
+        "message": "Agente operacional"
+      },
+      "warm": {
+        "status": "active",
+        "message": "Agente operacional"
+      },
+      "cold": {
+        "status": "active",
+        "message": "Agente operacional"
+      },
+      "champion": {
+        "status": "active",
+        "message": "Agente operacional"
+      },
+      "atrisk": {
+        "status": "active",
+        "message": "Agente operacional"
+      }
+    }
+  },
+  "overall": "warning"
+}

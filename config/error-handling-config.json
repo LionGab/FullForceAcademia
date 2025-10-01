@@ -1,0 +1,412 @@
+{
+  "name": "FullForce Academia - Error Handling and Logging Configuration",
+  "version": "2.0",
+  "description": "Comprehensive error handling and logging for Google Sheets N8N WhatsApp integration",
+  "created": "2025-09-22",
+
+  "errorHandling": {
+    "policies": {
+      "googleSheets": {
+        "maxRetries": 3,
+        "retryDelay": 5000,
+        "exponentialBackoff": true,
+        "timeoutMs": 30000,
+        "fallbacks": [
+          "use_cached_data",
+          "switch_to_manual_mode",
+          "notify_administrators"
+        ],
+        "criticalErrors": [
+          "AUTHENTICATION_FAILED",
+          "SPREADSHEET_NOT_FOUND",
+          "PERMISSION_DENIED",
+          "QUOTA_EXCEEDED"
+        ]
+      },
+      "n8n": {
+        "maxRetries": 3,
+        "retryDelay": 10000,
+        "exponentialBackoff": true,
+        "timeoutMs": 45000,
+        "fallbacks": [
+          "queue_for_later_processing",
+          "use_alternative_webhook",
+          "enable_offline_mode"
+        ],
+        "criticalErrors": [
+          "WEBHOOK_NOT_FOUND",
+          "WORKFLOW_EXECUTION_FAILED",
+          "RATE_LIMIT_EXCEEDED",
+          "AUTHENTICATION_FAILED"
+        ]
+      },
+      "waha": {
+        "maxRetries": 5,
+        "retryDelay": 3000,
+        "exponentialBackoff": true,
+        "timeoutMs": 60000,
+        "fallbacks": [
+          "switch_to_backup_session",
+          "queue_messages",
+          "notify_manual_intervention"
+        ],
+        "criticalErrors": [
+          "SESSION_NOT_AUTHENTICATED",
+          "PHONE_NUMBER_INVALID",
+          "MESSAGE_SEND_FAILED",
+          "RATE_LIMIT_EXCEEDED"
+        ]
+      },
+      "campaign": {
+        "maxBatchFailures": 5,
+        "failureThreshold": 0.2,
+        "pauseOnHighFailureRate": true,
+        "autoResumeAfterMs": 1800000,
+        "escalationRules": [
+          {
+            "condition": "failure_rate > 0.3",
+            "action": "pause_campaign",
+            "notify": ["admin", "manager"]
+          },
+          {
+            "condition": "consecutive_failures > 10",
+            "action": "stop_campaign",
+            "notify": ["admin"]
+          }
+        ]
+      }
+    },
+
+    "errorTypes": {
+      "AUTHENTICATION_ERROR": {
+        "severity": "CRITICAL",
+        "autoRetry": false,
+        "requiresManualIntervention": true,
+        "notifications": ["admin", "technical_team"]
+      },
+      "NETWORK_ERROR": {
+        "severity": "HIGH",
+        "autoRetry": true,
+        "maxRetries": 5,
+        "notifications": ["technical_team"]
+      },
+      "VALIDATION_ERROR": {
+        "severity": "MEDIUM",
+        "autoRetry": false,
+        "logDetails": true,
+        "notifications": ["data_team"]
+      },
+      "RATE_LIMIT_ERROR": {
+        "severity": "MEDIUM",
+        "autoRetry": true,
+        "retryDelay": 60000,
+        "notifications": ["admin"]
+      },
+      "DATA_PROCESSING_ERROR": {
+        "severity": "HIGH",
+        "autoRetry": true,
+        "maxRetries": 3,
+        "notifications": ["data_team", "admin"]
+      },
+      "WHATSAPP_DELIVERY_ERROR": {
+        "severity": "MEDIUM",
+        "autoRetry": true,
+        "maxRetries": 3,
+        "notifications": ["campaign_manager"]
+      }
+    },
+
+    "circuitBreaker": {
+      "enabled": true,
+      "failureThreshold": 10,
+      "timeoutMs": 30000,
+      "resetTimeoutMs": 300000,
+      "services": {
+        "googleSheets": {
+          "enabled": true,
+          "failureThreshold": 5,
+          "timeoutMs": 60000
+        },
+        "n8n": {
+          "enabled": true,
+          "failureThreshold": 8,
+          "timeoutMs": 45000
+        },
+        "waha": {
+          "enabled": true,
+          "failureThreshold": 15,
+          "timeoutMs": 30000
+        }
+      }
+    }
+  },
+
+  "logging": {
+    "general": {
+      "level": "info",
+      "enableDebug": true,
+      "enableTrace": false,
+      "format": "json",
+      "timestamp": true,
+      "maxFileSize": "100MB",
+      "maxFiles": 10,
+      "compress": true
+    },
+
+    "loggers": {
+      "application": {
+        "file": "./logs/application.log",
+        "level": "info",
+        "maxSize": "50MB",
+        "maxFiles": 5
+      },
+      "error": {
+        "file": "./logs/errors.log",
+        "level": "error",
+        "maxSize": "20MB",
+        "maxFiles": 10
+      },
+      "googleSheets": {
+        "file": "./logs/google-sheets.log",
+        "level": "debug",
+        "maxSize": "30MB",
+        "maxFiles": 5
+      },
+      "n8n": {
+        "file": "./logs/n8n-integration.log",
+        "level": "info",
+        "maxSize": "40MB",
+        "maxFiles": 5
+      },
+      "waha": {
+        "file": "./logs/waha-whatsapp.log",
+        "level": "debug",
+        "maxSize": "50MB",
+        "maxFiles": 7
+      },
+      "campaign": {
+        "file": "./logs/campaign-metrics.log",
+        "level": "info",
+        "maxSize": "30MB",
+        "maxFiles": 15
+      },
+      "webhook": {
+        "file": "./logs/webhook-activity.log",
+        "level": "debug",
+        "maxSize": "25MB",
+        "maxFiles": 5
+      },
+      "performance": {
+        "file": "./logs/performance-metrics.log",
+        "level": "info",
+        "maxSize": "20MB",
+        "maxFiles": 5
+      }
+    },
+
+    "metrics": {
+      "enabled": true,
+      "interval": 60000,
+      "trackResponseTimes": true,
+      "trackErrorRates": true,
+      "trackMemoryUsage": true,
+      "trackCpuUsage": true,
+      "customMetrics": [
+        "google_sheets_read_time",
+        "campaign_conversion_rate",
+        "whatsapp_delivery_rate",
+        "n8n_workflow_execution_time"
+      ]
+    },
+
+    "alerts": {
+      "enabled": true,
+      "thresholds": {
+        "errorRate": 0.05,
+        "responseTime": 5000,
+        "memoryUsage": 0.85,
+        "diskSpace": 0.90
+      },
+      "channels": {
+        "email": {
+          "enabled": true,
+          "recipients": ["admin@fullforceacademia.com.br"]
+        },
+        "webhook": {
+          "enabled": true,
+          "url": "http://localhost:3005/api/alerts/webhook"
+        },
+        "console": {
+          "enabled": true,
+          "level": "warn"
+        }
+      }
+    }
+  },
+
+  "monitoring": {
+    "healthChecks": {
+      "interval": 30000,
+      "timeout": 10000,
+      "endpoints": [
+        {
+          "name": "Google Sheets API",
+          "url": "https://sheets.googleapis.com/v4/spreadsheets/1cgSe5T5TrHSohP3tcv6iyYxS2WL-GnKNnFF0zGT0ZRo",
+          "method": "HEAD",
+          "critical": true
+        },
+        {
+          "name": "N8N Instance",
+          "url": "https://lionalpha.app.n8n.cloud/healthz",
+          "method": "GET",
+          "critical": true
+        },
+        {
+          "name": "WAHA Service",
+          "url": "http://localhost:3000/api/health",
+          "method": "GET",
+          "critical": true
+        },
+        {
+          "name": "Local API",
+          "url": "http://localhost:3005/health",
+          "method": "GET",
+          "critical": false
+        }
+      ]
+    },
+
+    "dashboards": {
+      "enabled": true,
+      "updateInterval": 30000,
+      "metrics": [
+        "active_campaigns",
+        "messages_sent_today",
+        "current_error_rate",
+        "system_health_status",
+        "conversion_rates_by_segment"
+      ]
+    }
+  },
+
+  "recovery": {
+    "automaticRecovery": {
+      "enabled": true,
+      "strategies": [
+        {
+          "name": "service_restart",
+          "conditions": ["service_down", "authentication_failed"],
+          "actions": ["restart_service", "clear_cache", "notify_admin"]
+        },
+        {
+          "name": "data_resync",
+          "conditions": ["data_inconsistency", "sync_timeout"],
+          "actions": ["trigger_manual_sync", "validate_data", "update_cache"]
+        },
+        {
+          "name": "campaign_resume",
+          "conditions": ["temporary_failure", "rate_limit_cleared"],
+          "actions": ["resume_campaign", "adjust_rate_limits", "monitor_closely"]
+        }
+      ]
+    },
+
+    "backupStrategies": {
+      "dataBackup": {
+        "enabled": true,
+        "interval": 3600000,
+        "retention": "7d",
+        "destinations": ["./backups/data", "./backups/remote"]
+      },
+      "configBackup": {
+        "enabled": true,
+        "interval": 86400000,
+        "retention": "30d",
+        "destinations": ["./backups/config"]
+      },
+      "logBackup": {
+        "enabled": true,
+        "interval": 86400000,
+        "retention": "14d",
+        "destinations": ["./backups/logs"]
+      }
+    }
+  },
+
+  "notifications": {
+    "channels": {
+      "email": {
+        "enabled": true,
+        "smtp": {
+          "host": "smtp.gmail.com",
+          "port": 587,
+          "secure": false,
+          "auth": {
+            "user": "noreply@fullforceacademia.com.br",
+            "pass": "{{EMAIL_PASSWORD}}"
+          }
+        },
+        "templates": {
+          "error": "error-notification.html",
+          "warning": "warning-notification.html",
+          "success": "success-notification.html"
+        }
+      },
+      "webhook": {
+        "enabled": true,
+        "endpoints": [
+          {
+            "name": "admin_webhook",
+            "url": "http://localhost:3005/api/notifications/admin",
+            "events": ["critical_error", "campaign_completed"]
+          },
+          {
+            "name": "monitoring_webhook",
+            "url": "http://localhost:3005/api/notifications/monitoring",
+            "events": ["system_health", "performance_alert"]
+          }
+        ]
+      },
+      "console": {
+        "enabled": true,
+        "colors": true,
+        "timestamp": true
+      }
+    },
+
+    "rules": [
+      {
+        "name": "critical_error_immediate",
+        "condition": "severity == 'CRITICAL'",
+        "channels": ["email", "webhook", "console"],
+        "immediate": true
+      },
+      {
+        "name": "high_error_rate",
+        "condition": "error_rate > 0.1",
+        "channels": ["email", "webhook"],
+        "cooldown": 300000
+      },
+      {
+        "name": "campaign_completion",
+        "condition": "event == 'campaign_completed'",
+        "channels": ["email"],
+        "immediate": false
+      }
+    ]
+  },
+
+  "development": {
+    "debugMode": {
+      "enabled": true,
+      "logLevel": "debug",
+      "enableTracing": true,
+      "mockExternalServices": false
+    },
+    "testing": {
+      "enableTestMode": false,
+      "mockData": "./test-data/mock-sheets-data.json",
+      "skipExternalCalls": false
+    }
+  }
+}

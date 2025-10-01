@@ -1,0 +1,251 @@
+{
+  "name": "FullForce Academia - Webhook Endpoints Configuration",
+  "version": "2.0",
+  "description": "Webhook endpoints for N8N and WhatsApp automation integration",
+  "created": "2025-09-22",
+
+  "endpoints": {
+    "n8n": {
+      "baseUrl": "https://lionalpha.app.n8n.cloud",
+      "webhooks": {
+        "googleSheetsManualTrigger": {
+          "url": "https://lionalpha.app.n8n.cloud/webhook/google-sheets-manual-trigger",
+          "method": "POST",
+          "description": "Manually trigger Google Sheets data reading",
+          "payload": {
+            "triggerSource": "manual",
+            "requestedBy": "string",
+            "forceRefresh": "boolean"
+          }
+        },
+        "campaign650Trigger": {
+          "url": "https://lionalpha.app.n8n.cloud/webhook/campaign-650-trigger",
+          "method": "POST",
+          "description": "Trigger Campaign 650 with segmented user data",
+          "payload": {
+            "trigger": "google_sheets_data",
+            "sessionId": "string",
+            "segmentationResult": "object",
+            "executedBy": "string",
+            "dataSource": "string",
+            "spreadsheetId": "string"
+          }
+        },
+        "wahaAutomationTrigger": {
+          "url": "https://lionalpha.app.n8n.cloud/webhook/whatsapp-waha-trigger",
+          "method": "POST",
+          "description": "Trigger WhatsApp automation via WAHA",
+          "payload": {
+            "campaignId": "string",
+            "segmentationResult": "object",
+            "messageTemplates": "object",
+            "urgency": "string"
+          }
+        },
+        "resultUpdate": {
+          "url": "https://lionalpha.app.n8n.cloud/webhook/result-update",
+          "method": "POST",
+          "description": "Update campaign results and metrics",
+          "payload": {
+            "campaignId": "string",
+            "batchResults": "object",
+            "metrics": "object",
+            "timestamp": "string"
+          }
+        }
+      }
+    },
+    "local": {
+      "baseUrl": "http://localhost:3005",
+      "endpoints": {
+        "wahaWebhook": {
+          "url": "http://localhost:3005/webhook/waha",
+          "method": "POST",
+          "description": "Receive WAHA webhooks for message status",
+          "payload": {
+            "session": "string",
+            "messageId": "string",
+            "status": "string",
+            "phone": "string",
+            "timestamp": "string"
+          }
+        },
+        "campaignMetrics": {
+          "url": "http://localhost:3005/api/campaigns/update-batch-results",
+          "method": "POST",
+          "description": "Update campaign batch results",
+          "headers": {
+            "Authorization": "Bearer {{ACADEMIA_API_TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "payload": {
+            "batchResults": "object",
+            "campaignId": "string"
+          }
+        },
+        "dashboard": {
+          "url": "http://localhost:3005/api/dashboard",
+          "method": "GET",
+          "description": "Get campaign dashboard data",
+          "headers": {
+            "Authorization": "Bearer {{ACADEMIA_API_TOKEN}}"
+          }
+        },
+        "healthCheck": {
+          "url": "http://localhost:3005/health",
+          "method": "GET",
+          "description": "Health check endpoint"
+        }
+      }
+    },
+    "waha": {
+      "baseUrl": "http://localhost:3000",
+      "endpoints": {
+        "sessionStatus": {
+          "url": "http://localhost:3000/api/sessions/fullforce-session/status",
+          "method": "GET",
+          "description": "Check WAHA session status"
+        },
+        "sendMessage": {
+          "url": "http://localhost:3000/api/send",
+          "method": "POST",
+          "description": "Send WhatsApp message via WAHA",
+          "payload": {
+            "session": "fullforce-session",
+            "payload": {
+              "phone": "string",
+              "message": "string"
+            }
+          }
+        },
+        "healthCheck": {
+          "url": "http://localhost:3000/api/health",
+          "method": "GET",
+          "description": "WAHA health check"
+        }
+      }
+    }
+  },
+
+  "integrationFlow": {
+    "step1": {
+      "name": "Google Sheets Data Reading",
+      "trigger": "Schedule (5min) or Manual webhook",
+      "webhook": "googleSheetsManualTrigger",
+      "nextStep": "step2"
+    },
+    "step2": {
+      "name": "Campaign 650 Trigger",
+      "webhook": "campaign650Trigger",
+      "description": "Receives segmented user data and starts campaign",
+      "nextStep": "step3"
+    },
+    "step3": {
+      "name": "WhatsApp Automation",
+      "webhook": "wahaAutomationTrigger",
+      "description": "Triggers WAHA-based WhatsApp message sending",
+      "nextStep": "step4"
+    },
+    "step4": {
+      "name": "Result Tracking",
+      "webhook": "resultUpdate",
+      "description": "Updates campaign metrics and ROI tracking"
+    }
+  },
+
+  "security": {
+    "authentication": {
+      "n8n": {
+        "type": "webhook_token",
+        "description": "N8N webhook tokens are automatically generated"
+      },
+      "local": {
+        "type": "bearer_token",
+        "header": "Authorization: Bearer {{ACADEMIA_API_TOKEN}}"
+      },
+      "waha": {
+        "type": "none",
+        "description": "WAHA runs on localhost without authentication"
+      }
+    },
+    "rateLimiting": {
+      "enabled": true,
+      "maxRequests": 100,
+      "windowMs": 900000,
+      "skipSuccessfulRequests": false
+    },
+    "cors": {
+      "enabled": true,
+      "allowedOrigins": [
+        "https://lionalpha.app.n8n.cloud",
+        "http://localhost:3000",
+        "http://localhost:3005"
+      ]
+    }
+  },
+
+  "errorHandling": {
+    "retryPolicy": {
+      "maxRetries": 3,
+      "retryDelay": 5000,
+      "exponentialBackoff": true
+    },
+    "timeouts": {
+      "n8nWebhook": 30000,
+      "wahaApi": 45000,
+      "localApi": 15000
+    },
+    "fallbacks": {
+      "enableQueue": true,
+      "queueMaxSize": 1000,
+      "enableDeadLetterQueue": true
+    }
+  },
+
+  "monitoring": {
+    "healthChecks": {
+      "interval": 60000,
+      "endpoints": [
+        "http://localhost:3005/health",
+        "http://localhost:3000/api/health",
+        "https://lionalpha.app.n8n.cloud/healthz"
+      ]
+    },
+    "metrics": {
+      "enabled": true,
+      "logPath": "./logs/webhook-metrics.log",
+      "trackResponseTimes": true,
+      "trackErrorRates": true
+    }
+  },
+
+  "testing": {
+    "testEndpoints": {
+      "manualGoogleSheetsTest": {
+        "url": "https://lionalpha.app.n8n.cloud/webhook/google-sheets-manual-trigger",
+        "method": "POST",
+        "payload": {
+          "triggerSource": "test",
+          "requestedBy": "test-user",
+          "forceRefresh": true
+        }
+      },
+      "campaignTest": {
+        "url": "https://lionalpha.app.n8n.cloud/webhook/campaign-650-trigger",
+        "method": "POST",
+        "payload": {
+          "trigger": "test",
+          "sessionId": "test_session_123",
+          "segmentationResult": {
+            "totalUsers": 10,
+            "segments": {
+              "CRITICA": [{"nome": "Test User", "telefone": "5511999999999"}]
+            }
+          },
+          "executedBy": "test",
+          "dataSource": "test"
+        }
+      }
+    }
+  }
+}

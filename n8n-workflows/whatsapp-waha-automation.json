@@ -1,0 +1,365 @@
+{
+  "name": "FullForce Academia - WhatsApp WAHA Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-waha-trigger",
+        "options": {
+          "noResponseBody": false
+        }
+      },
+      "id": "waha-webhook-trigger",
+      "name": "WAHA Campaign Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "waha-campaign-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📱 WHATSAPP WAHA CAMPAIGN INITIALIZATION\n * Process segmented users for WhatsApp automation via WAHA\n */\n\nconst payload = $input.first().json;\nconst segmentationResult = payload.segmentationResult;\n\nif (!segmentationResult || !segmentationResult.segments) {\n  throw new Error('Invalid segmentation data received');\n}\n\n// WhatsApp message templates\nconst messageTemplates = {\n  CRITICA: {\n    template: \"Olá {nome}! 👋 Sentimos sua falta na academia Full Force! 💪\\n\\nNotamos que você não tem vindo aos treinos ultimamente. Que tal retomar sua jornada fitness? Temos uma oferta especial esperando por você! 🎯\\n\\nVamos conversar? Estamos aqui para te apoiar! 💚\",\n    followUp: \"Oi {nome}! 😊 Ainda não conseguimos nos falar. Que tal agendarmos uma conversa rápida? Temos novidades incríveis na academia!\",\n    urgency: \"HIGH\",\n    delay: 0,\n    maxAttempts: 3\n  },\n  ALTA: {\n    template: \"Oi {nome}! 🌟 Como você está?\\n\\nNotamos que você não tem aparecido na academia Full Force. Sabemos que a vida anda corrida, mas sua saúde é prioridade! 🏋️‍♂️\\n\\nQue tal voltarmos aos treinos? Temos horários flexíveis e um time incrível te esperando! 💪\",\n    followUp: \"Olá {nome}! 👋 Que tal conversarmos sobre seus objetivos fitness? Temos soluções personalizadas para você!\",\n    urgency: \"MEDIUM\",\n    delay: 3600000,\n    maxAttempts: 2\n  },\n  MEDIA: {\n    template: \"Olá {nome}! 😊\\n\\nSua saúde e bem-estar são importantes para nós na academia Full Force! 🌿\\n\\nSabemos que às vezes é difícil manter a rotina, mas estamos aqui para te ajudar. Que tal voltarmos aos treinos? Temos novidades especiais para você! ✨\",\n    followUp: \"Oi {nome}! 🎯 Ainda está pensando em voltar aos treinos? Vamos conversar sobre como podemos te ajudar!\",\n    urgency: \"MEDIUM\",\n    delay: 7200000,\n    maxAttempts: 2\n  },\n  BAIXA: {\n    template: \"Oi {nome}! 👋\\n\\nLembra da academia Full Force? 🏋️‍♀️ Sabemos que faz um tempo, mas sua vaga ainda está aqui te esperando!\\n\\nTemos promoções especiais para ex-alunos e muitas novidades. Que tal dar uma passadinha para conhecer? 😊\",\n    followUp: \"Olá {nome}! 🌟 Que tal conhecer as novidades da academia? Temos condições especiais para você!\",\n    urgency: \"LOW\",\n    delay: 10800000,\n    maxAttempts: 1\n  }\n};\n\n// WAHA Configuration\nconst wahaConfig = {\n  apiUrl: 'http://localhost:3000',\n  sessionName: 'fullforce-session',\n  webhookUrl: 'http://localhost:3005/webhook/waha',\n  retryAttempts: 3,\n  retryDelay: 5000\n};\n\nconst campaignSession = {\n  id: `waha_campaign_${Date.now()}`,\n  originalSessionId: segmentationResult.sessionId,\n  startTime: new Date(),\n  status: 'initializing',\n  wahaConfig,\n  messageTemplates,\n  segmentationResult,\n  metrics: {\n    totalUsers: segmentationResult.totalUsers,\n    segments: segmentationResult.segmentSummary,\n    expectedConversions: calculateExpectedConversions(segmentationResult)\n  }\n};\n\nfunction calculateExpectedConversions(segmentation) {\n  const conversions = {};\n  const conversionRates = { CRITICA: 0.35, ALTA: 0.25, MEDIA: 0.15, BAIXA: 0.08 };\n  \n  Object.keys(segmentation.segmentSummary).forEach(segment => {\n    const count = segmentation.segmentSummary[segment];\n    conversions[segment] = {\n      users: count,\n      expectedConversions: Math.floor(count * conversionRates[segment]),\n      conversionRate: conversionRates[segment]\n    };\n  });\n  \n  return conversions;\n}\n\nconsole.log('📱 WAHA Campaign initialization started:', campaignSession.id);\nconsole.log('📊 Target segments:', campaignSession.metrics.segments);\n\nreturn {\n  json: {\n    campaignSession,\n    nextAction: 'check_waha_status',\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "waha-campaign-init",
+      "name": "WAHA Campaign Initialization",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/api/sessions/fullforce-session/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 3
+          }
+        }
+      },
+      "id": "check-waha-status",
+      "name": "Check WAHA Session Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "waha-ready-condition",
+              "leftValue": "={{$json.status}}",
+              "rightValue": "WORKING",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "waha-status-check",
+      "name": "WAHA Status Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🚨 WAHA SESSION ERROR HANDLER\n * Handle WAHA session not ready\n */\n\nconst campaignSession = $input.first().json.campaignSession;\nconst wahaStatus = $input.first().json;\n\nconst errorResponse = {\n  type: 'WAHA_SESSION_ERROR',\n  campaignId: campaignSession.id,\n  error: 'WAHA session is not ready',\n  wahaStatus: wahaStatus.status || 'UNKNOWN',\n  message: 'Cannot start WhatsApp campaign: WAHA session not in WORKING state',\n  timestamp: new Date().toISOString(),\n  retryActions: [\n    'Check WAHA service status',\n    'Restart WAHA session if needed',\n    'Verify WhatsApp QR code scan',\n    'Retry campaign after session is ready'\n  ]\n};\n\nconsole.log('🚨 WAHA Session Error:', errorResponse.message);\nconsole.log('📱 Current WAHA Status:', wahaStatus.status);\n\nreturn {\n  json: errorResponse\n};"
+      },
+      "id": "waha-error-handler",
+      "name": "WAHA Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📤 SEGMENT BATCH PROCESSOR\n * Process segments sequentially with delays\n */\n\nconst campaignSession = $input.first().json.campaignSession;\nconst segments = campaignSession.segmentationResult.segments;\nconst messageTemplates = campaignSession.messageTemplates;\n\n// Processing order by priority\nconst processingOrder = ['CRITICA', 'ALTA', 'MEDIA', 'BAIXA'];\nconst batchJobs = [];\n\nfor (const priority of processingOrder) {\n  const segmentUsers = segments[priority];\n  if (!segmentUsers || segmentUsers.length === 0) continue;\n\n  const template = messageTemplates[priority];\n  const batchSize = 20; // Process 20 users at a time\n  \n  // Split users into batches\n  for (let i = 0; i < segmentUsers.length; i += batchSize) {\n    const batch = segmentUsers.slice(i, i + batchSize);\n    \n    batchJobs.push({\n      batchId: `${priority}_batch_${Math.floor(i / batchSize) + 1}`,\n      segment: priority,\n      users: batch,\n      userCount: batch.length,\n      template: template.template,\n      followUpTemplate: template.followUp,\n      urgency: template.urgency,\n      delay: template.delay,\n      maxAttempts: template.maxAttempts,\n      batchIndex: Math.floor(i / batchSize),\n      totalBatches: Math.ceil(segmentUsers.length / batchSize),\n      processingOrder: processingOrder.indexOf(priority) + 1\n    });\n  }\n}\n\nconsole.log(`📤 Created ${batchJobs.length} batch jobs for processing`);\nconsole.log('🎯 Segments distribution:', Object.keys(segments).map(s => `${s}: ${segments[s].length}`));\n\n// Return each batch as separate execution\nreturn batchJobs.map(batch => ({\n  json: {\n    batchJob: batch,\n    campaignSession,\n    totalBatches: batchJobs.length,\n    timestamp: new Date().toISOString()\n  }\n}));"
+      },
+      "id": "segment-batch-processor",
+      "name": "Segment Batch Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * ⏱️ BATCH DELAY CONTROLLER\n * Apply delays between segments and batches\n */\n\nconst batchJob = $input.first().json.batchJob;\nconst campaignSession = $input.first().json.campaignSession;\n\n// Calculate delay based on segment and batch\nconst baseDelay = batchJob.delay; // Segment-specific delay\nconst batchDelay = batchJob.batchIndex * 30000; // 30s between batches\nconst totalDelay = baseDelay + batchDelay;\n\nconst delayInfo = {\n  batchId: batchJob.batchId,\n  segment: batchJob.segment,\n  baseDelay: baseDelay,\n  batchDelay: batchDelay,\n  totalDelay: totalDelay,\n  delayMessage: `Waiting ${Math.round(totalDelay / 1000)}s before processing ${batchJob.segment} batch ${batchJob.batchIndex + 1}/${batchJob.totalBatches}`,\n  scheduledTime: new Date(Date.now() + totalDelay).toISOString()\n};\n\nconsole.log('⏱️', delayInfo.delayMessage);\n\n// If no delay needed, proceed immediately\nif (totalDelay === 0) {\n  return {\n    json: {\n      batchJob,\n      campaignSession,\n      delayInfo,\n      readyToProcess: true,\n      timestamp: new Date().toISOString()\n    }\n  };\n}\n\n// Otherwise, schedule the delay\nreturn {\n  json: {\n    batchJob,\n    campaignSession,\n    delayInfo,\n    readyToProcess: false,\n    delayRequired: true,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "batch-delay-controller",
+      "name": "Batch Delay Controller",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "amount": "={{$json.delayInfo.totalDelay}}",
+        "unit": "ms"
+      },
+      "id": "segment-delay",
+      "name": "Segment Delay",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📱 WHATSAPP MESSAGE SENDER via WAHA\n * Send WhatsApp messages to users in batch\n */\n\nconst batchJob = $input.first().json.batchJob;\nconst campaignSession = $input.first().json.campaignSession;\nconst wahaConfig = campaignSession.wahaConfig;\n\n// Prepare messages for the batch\nconst messages = batchJob.users.map(user => {\n  const personalizedMessage = batchJob.template\n    .replace(/{nome}/g, user.nome)\n    .replace(/{academia}/g, 'Full Force')\n    .replace(/{valor}/g, user.valorMensalidade ? `R$ ${user.valorMensalidade.toFixed(2)}` : 'valor especial');\n\n  return {\n    userId: user.rowIndex,\n    nome: user.nome,\n    telefone: user.telefone,\n    message: personalizedMessage,\n    segment: batchJob.segment,\n    priority: user.priority,\n    urgency: batchJob.urgency,\n    attempts: 1,\n    maxAttempts: batchJob.maxAttempts\n  };\n});\n\nconst batchExecution = {\n  batchId: batchJob.batchId,\n  segment: batchJob.segment,\n  startTime: new Date(),\n  messages,\n  messageCount: messages.length,\n  wahaApiUrl: wahaConfig.apiUrl,\n  sessionName: wahaConfig.sessionName,\n  results: [],\n  errors: []\n};\n\nconsole.log(`📱 Preparing to send ${messages.length} WhatsApp messages for ${batchJob.segment} segment`);\n\nreturn {\n  json: {\n    batchExecution,\n    campaignSession,\n    nextAction: 'send_whatsapp_messages',\n    timestamp: new Date().toISOString()\n  }\n};\n\n// Note: The actual WAHA API calls will be made in the next node"
+      },
+      "id": "prepare-whatsapp-messages",
+      "name": "Prepare WhatsApp Messages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/api/send",
+        "sendBody": true,
+        "specifyBodyType": "json",
+        "jsonBody": "={\n  \"session\": \"{{$json.batchExecution.sessionName}}\",\n  \"payload\": {\n    \"phone\": \"{{$json.batchExecution.messages[0].telefone}}\",\n    \"message\": \"{{$json.batchExecution.messages[0].message}}\"\n  }\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxTries": 3
+          }
+        }
+      },
+      "id": "send-whatsapp-waha",
+      "name": "Send WhatsApp via WAHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📊 BATCH RESULT PROCESSOR\n * Process results from WAHA API calls\n */\n\nconst batchExecution = $input.first().json.batchExecution;\nconst wahaResponses = $input.all();\n\nconst batchResults = {\n  batchId: batchExecution.batchId,\n  segment: batchExecution.segment,\n  executionTime: new Date(),\n  totalMessages: batchExecution.messageCount,\n  results: [],\n  summary: {\n    sent: 0,\n    failed: 0,\n    pending: 0\n  }\n};\n\n// Process each WAHA response\nwahaResponses.forEach((response, index) => {\n  const message = batchExecution.messages[index];\n  const result = {\n    userId: message.userId,\n    nome: message.nome,\n    telefone: message.telefone,\n    segment: message.segment,\n    messageId: response.json.messageId || null,\n    status: response.json.success ? 'SENT' : 'FAILED',\n    error: response.json.error || null,\n    timestamp: new Date().toISOString(),\n    wahaResponse: response.json\n  };\n  \n  batchResults.results.push(result);\n  \n  // Update summary\n  if (result.status === 'SENT') {\n    batchResults.summary.sent++;\n  } else {\n    batchResults.summary.failed++;\n  }\n});\n\n// Calculate success rate\nbatchResults.summary.successRate = Math.round((batchResults.summary.sent / batchResults.totalMessages) * 100);\n\nconsole.log(`📊 Batch ${batchResults.batchId} completed:`);\nconsole.log(`✅ Sent: ${batchResults.summary.sent}/${batchResults.totalMessages} (${batchResults.summary.successRate}%)`);\nif (batchResults.summary.failed > 0) {\n  console.log(`❌ Failed: ${batchResults.summary.failed}`);\n}\n\nreturn {\n  json: {\n    batchResults,\n    nextAction: 'update_campaign_metrics',\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "batch-result-processor",
+      "name": "Batch Result Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 200]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3005/api/campaigns/update-batch-results",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "batchResults",
+              "value": "={{$json.batchResults}}"
+            },
+            {
+              "name": "campaignId",
+              "value": "={{$json.batchResults.batchId}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.ACADEMIA_API_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "update-campaign-metrics",
+      "name": "Update Campaign Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2440, 200]
+    }
+  ],
+  "connections": {
+    "WAHA Campaign Trigger": {
+      "main": [
+        [
+          {
+            "node": "WAHA Campaign Initialization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WAHA Campaign Initialization": {
+      "main": [
+        [
+          {
+            "node": "Check WAHA Session Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check WAHA Session Status": {
+      "main": [
+        [
+          {
+            "node": "WAHA Status Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WAHA Status Check": {
+      "main": [
+        [
+          {
+            "node": "Segment Batch Processor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "WAHA Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segment Batch Processor": {
+      "main": [
+        [
+          {
+            "node": "Batch Delay Controller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Delay Controller": {
+      "main": [
+        [
+          {
+            "node": "Segment Delay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segment Delay": {
+      "main": [
+        [
+          {
+            "node": "Prepare WhatsApp Messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare WhatsApp Messages": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp via WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp via WAHA": {
+      "main": [
+        [
+          {
+            "node": "Batch Result Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Result Processor": {
+      "main": [
+        [
+          {
+            "node": "Update Campaign Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {},
+  "tags": [
+    {
+      "createdAt": "2025-09-22T00:00:00.000Z",
+      "updatedAt": "2025-09-22T00:00:00.000Z",
+      "id": "whatsapp-automation",
+      "name": "WhatsApp Automation"
+    },
+    {
+      "createdAt": "2025-09-22T00:00:00.000Z",
+      "updatedAt": "2025-09-22T00:00:00.000Z",
+      "id": "waha-integration",
+      "name": "WAHA Integration"
+    },
+    {
+      "createdAt": "2025-09-22T00:00:00.000Z",
+      "updatedAt": "2025-09-22T00:00:00.000Z",
+      "id": "fullforce-academia",
+      "name": "FullForce Academia"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-09-22T00:00:00.000Z",
+  "versionId": "whatsapp-waha-automation-v2.0"
+}
