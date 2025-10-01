@@ -6,6 +6,8 @@ import StatsSection from './components/StatsSection';
 import BenefitsSection from './components/BenefitsSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import FAQSection from './components/FAQSection';
+import CTASection from './components/CTASection';
+import VideoSection from './components/VideoSection';
 import WhatsAppButton from './components/WhatsAppButton';
 import Logo from './components/Logo';
 import { initAnalytics } from './utils/analytics';
@@ -77,25 +79,7 @@ function App() {
         </div>
       </section>
 
-      <section className="video-section">
-        <div className="container">
-          <div className="section-header">
-            <div className="badge">NOSSA HISTÓRIA</div>
-            <h2>
-              <span className="highlight">Inauguração</span> Full Force Academia
-            </h2>
-            <p className="section-description">
-              Veja como foi o início da nossa jornada em Matupá-MT
-            </p>
-          </div>
-          <div className="video-container">
-            <video controls className="inauguration-video" poster="/vite.svg">
-              <source src="/inauguracao.mp4" type="video/mp4" />
-              Seu navegador não suporta o elemento de vídeo.
-            </video>
-          </div>
-        </div>
-      </section>
+      <VideoSection />
 
       <StatsSection />
 
@@ -109,18 +93,7 @@ function App() {
 
       <FAQSection />
 
-      <section className="cta-section">
-        <div className="cta-background"></div>
-        <div className="container">
-          <div className="cta-content">
-            <h2>Pronto para transformar seu corpo e sua vida?</h2>
-            <p>Agende hoje mesmo sua aula teste grátis e conheça nossa estrutura!</p>
-            <a href="https://wa.me/5566991080808?text=Olá,%20vim%20do%20site%20e%20quero%20agendar%20uma%20aula%20teste%20grátis!" target="_blank" rel="noopener noreferrer" className="btn btn-large btn-pulse">
-              Agendar Aula Teste Grátis no WhatsApp
-            </a>
-          </div>
-        </div>
-      </section>
+      <CTASection />
 
       <footer id="contato" className="footer">
         <div className="container">
