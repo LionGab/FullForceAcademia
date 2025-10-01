@@ -11,8 +11,8 @@ export const GTM_ID = 'GTM_CONTAINER_ID'; // Substituir pelo ID real
  */
 export const initGA = () => {
   // Google Analytics 4
-  if (typeof gtag !== 'undefined') {
-    gtag('config', GA_TRACKING_ID, {
+  if (typeof window !== 'undefined' && typeof window.gtag !== 'undefined') {
+    window.gtag('config', GA_TRACKING_ID, {
       page_title: document.title,
       page_location: window.location.href,
       send_page_view: true
@@ -24,8 +24,8 @@ export const initGA = () => {
  * Envia evento personalizado para GA
  */
 export const trackEvent = (eventName, parameters = {}) => {
-  if (typeof gtag !== 'undefined') {
-    gtag('event', eventName, {
+  if (typeof window !== 'undefined' && typeof window.gtag !== 'undefined') {
+    window.gtag('event', eventName, {
       event_category: parameters.category || 'General',
       event_label: parameters.label || '',
       value: parameters.value || 0,
@@ -34,7 +34,7 @@ export const trackEvent = (eventName, parameters = {}) => {
   }
 
   // Log para desenvolvimento
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log('Analytics Event:', eventName, parameters);
   }
 };
@@ -254,7 +254,7 @@ export const initAnalytics = () => {
   trackTimeOnSite();
 
   // Log para desenvolvimento
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log('Analytics initialized for Full Force Academia');
   }
 };
