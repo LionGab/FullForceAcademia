@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './App.css'
 
-import './analytics.js' // se quiser rodar seu script de analytics
+// Analytics temporariamente desabilitado para diagnóstico
+// import './analytics.js'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
