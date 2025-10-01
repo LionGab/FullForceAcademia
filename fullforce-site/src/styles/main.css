@@ -1,0 +1,510 @@
+/* Full Force Academia - Estilos Principais */
+
+/* Reset e Base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.6;
+  color: #fff;
+  background: #000;
+}
+
+.App {
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Hero Section */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+  padding: 80px 0;
+}
+
+.hero-content {
+  text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 50px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-bottom: 24px;
+}
+
+.hero-title {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, #fff 0%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  display: block;
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  color: #999;
+  font-weight: 400;
+  margin-top: 12px;
+}
+
+.hero-description {
+  font-size: 1.1rem;
+  color: #ccc;
+  max-width: 700px;
+  margin: 0 auto 40px;
+  line-height: 1.8;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 40px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #999;
+  font-size: 0.95rem;
+}
+
+.info-item svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 16px 32px;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: #000;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 30px rgba(245, 158, 11, 0.5);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-secondary:hover {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.btn-large {
+  padding: 20px 40px;
+  font-size: 1.1rem;
+}
+
+/* Plans Section */
+.plans-section {
+  padding: 100px 0;
+  background: linear-gradient(180deg, #000 0%, #0a0a0a 100%);
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 50px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  margin-bottom: 20px;
+}
+
+.highlight {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-description {
+  font-size: 1.1rem;
+  color: #aaa;
+  max-width: 700px;
+  margin: 0 auto 24px;
+}
+
+.guarantee {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 50px;
+  padding: 10px 24px;
+  color: #22c55e;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  max-width: 1100px;
+  margin: 0 auto 60px;
+}
+
+.plan-card {
+  background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 32px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.plan-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 10px 40px rgba(245, 158, 11, 0.2);
+}
+
+.plan-card.popular {
+  border-color: #f59e0b;
+  box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3);
+}
+
+.plan-badge {
+  position: absolute;
+  top: -12px;
+  right: 24px;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: #000;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 20px;
+}
+
+.plan-discount {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: #22c55e;
+  color: #000;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.plan-header h3 {
+  font-size: 1.5rem;
+  margin-bottom: 16px;
+  color: #f59e0b;
+}
+
+.plan-price {
+  margin-bottom: 16px;
+}
+
+.original-price {
+  font-size: 1rem;
+  color: #666;
+  text-decoration: line-through;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.current-price {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.price {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.period {
+  font-size: 1rem;
+  color: #999;
+}
+
+.plan-description {
+  color: #aaa;
+  font-size: 0.95rem;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.plan-features {
+  list-style: none;
+  margin-bottom: 32px;
+}
+
+.plan-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  color: #ccc;
+  font-size: 0.95rem;
+}
+
+.plan-features svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.plan-button {
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: #000;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.plan-button:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 30px rgba(245, 158, 11, 0.4);
+}
+
+.plans-footer {
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.5) 0%, rgba(15, 15, 15, 0.5) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 48px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.plans-footer h3 {
+  text-align: center;
+  font-size: 1.8rem;
+  margin-bottom: 32px;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.benefit-item {
+  text-align: center;
+}
+
+.benefit-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.benefit-icon::after {
+  content: '';
+  width: 32px;
+  height: 32px;
+  background: #f59e0b;
+  border-radius: 50%;
+  position: absolute;
+}
+
+.benefit-item h4 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.benefit-item p {
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.tip {
+  text-align: center;
+  color: #aaa;
+  font-size: 0.95rem;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cta-section {
+  padding: 80px 0;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: #000;
+  text-align: center;
+}
+
+.cta-section h2 {
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  margin-bottom: 16px;
+}
+
+.cta-section p {
+  font-size: 1.1rem;
+  margin-bottom: 32px;
+  opacity: 0.9;
+}
+
+.cta-section .btn {
+  background: #000;
+  color: #fff;
+}
+
+.cta-section .btn:hover {
+  background: #1a1a1a;
+}
+
+.footer {
+  background: #0a0a0a;
+  padding: 60px 0 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.footer-col h3, .footer-col h4 {
+  color: #f59e0b;
+  margin-bottom: 16px;
+}
+
+.footer-col p {
+  color: #999;
+  margin-bottom: 8px;
+}
+
+.footer-bottom {
+  text-align: center;
+  padding-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.whatsapp-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.whatsapp-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 30px rgba(37, 211, 102, 0.6);
+}
+
+.whatsapp-button svg {
+  width: 28px;
+  height: 28px;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .hero-cta {
+    flex-direction: column;
+  }
+
+  .plans-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .benefits-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .footer-content {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+}
