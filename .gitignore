@@ -108,5 +108,10 @@ tmp/
 temp/
 *.tmp
 *.temp
+
+# Repository analysis temporary files
+reports/analise-repositorio/*.log
+reports/analise-repositorio/*.tmp
+
 # Local Netlify folder
 .netlify
