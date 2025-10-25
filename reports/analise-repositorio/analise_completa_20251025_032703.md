@@ -1,5 +1,5 @@
 # Análise Criteriosa de Repositório GitHub
-**Data da Análise:** 25/10/2025 03:20:53
+**Data da Análise:** 25/10/2025 03:27:03
 **Repositório:** FullForceAcademia
 **Branch Atual:** copilot/add-github-repository-analysis
 
@@ -15,37 +15,49 @@
 
 ## 2. Estatísticas de Commits
 
-### Total de Commits: 2
-- Últimos 30 dias: 2
-- Último ano: 2
-\n### Distribuição Mensal (Últimos 12 meses)\n
+### Total de Commits: 4
+- Últimos 30 dias: 4
+- Último ano: 4
+
+### Distribuição Mensal (Últimos 12 meses)
+
 ```
-2025-10: 2 commits
+2025-10: 4 commits
 ```
-\n### Commits por Dia da Semana\n
+
+### Commits por Dia da Semana
+
 ```
+Saturday: 3 commits
 Wednesday: 1 commits
-Saturday: 1 commits
 ```
 
 ## 3. Análise de Contribuidores
 
 ### Total de Contribuidores: 2
-\n### Top 10 Contribuidores por Commits\n
+
+### Top 10 Contribuidores por Commits
+
 ```
+     3	copilot-swe-agent[bot]
      1	LionAlpha
-     1	copilot-swe-agent[bot]
 ```
-\n### Contribuidores Ativos (Últimos 30 dias)\n
+
+### Contribuidores Ativos (Últimos 30 dias)
+
 ```
+     3	copilot-swe-agent[bot]
      1	LionAlpha
-     1	copilot-swe-agent[bot]
 ```
 
 ## 4. Análise de Arquivos
 
-### Top 20 Arquivos Mais Modificados\n
+### Top 20 Arquivos Mais Modificados
+
 ```
+2 modificações: package.json
+2 modificações: README.md
+2 modificações: .gitignore
 1 modificações: workflows/n8n-workflow-650-inactive-users.json
 1 modificações: workflows/n8n-workflow-650-FIXED.json
 1 modificações: workflows/academia-webhook-responder-n8n.json
@@ -63,11 +75,10 @@ Saturday: 1 commits
 1 modificações: src/whatsapp-campaign-master.js
 1 modificações: src/whatsapp-baileys-waha-simple.js
 1 modificações: src/utils/time-utils.js
-1 modificações: src/services/waha-service.js
-1 modificações: src/services/waha-cloud-service.js
-1 modificações: src/services/scheduled-messages.js
 ```
-\n### Top 20 Arquivos Maiores\n
+
+### Top 20 Arquivos Maiores
+
 ```
 7.5M	fullforce-site/public/inauguracao.mp4
 3.9M	.claude.json
@@ -81,72 +92,90 @@ Saturday: 1 commits
 32K	src/services/lgpd-compliance.js
 32K	scripts/n8n-dashboard.html
 32K	mcp-sequential-thinking/src/mcp_sequential_thinking/server.py
+32K	estrutura-analise.json
+32K	GUIA-ANALISE-REPOSITORIO.md
 28K	src/services/follow-up-automation.js
 28K	src/services/campaign-orchestrator.js
 28K	src/services/campaign-analytics.js
 28K	scripts/n8n-fallback-system.js
 28K	scripts/n8n-alert-system.js
 28K	n8n-workflows/whatsapp-automation-webhook.json
-28K	mcp-sequential-thinking/src/mcp_sequential_thinking/error_handling.py
-28K	ffgym-quick-start.js
 ```
-\n**Total de arquivos rastreados:** 249
+
+**Total de arquivos rastreados:** 256
 
 ## 5. Estatísticas de Código
 
-### Linhas de Código por Tipo de Arquivo\n
+### Linhas de Código por Tipo de Arquivo
+
 ```
 JavaScript/TypeScript: 47090 linhas
 Python: 7167 linhas
 HTML/CSS: 2660 linhas
-Markdown: 10502 linhas
+Markdown: 10564 linhas
 JSON: 9887 linhas
 ```
 
 ## 6. Análise de Branches
 
-### Branches Locais\n
+### Branches Locais
+
 ```
-* copilot/add-github-repository-analysis 3d52a70 Initial plan
+* copilot/add-github-repository-analysis 847d7a9 Document repository analysis system in README
 ```
-\n### Branches Remotas\n
+
+### Branches Remotas
+
 ```
   origin/copilot/add-github-repository-analysis
 ```
-\n**Total de branches locais:** 1
-\n**Total de branches remotas:** 1
+
+**Total de branches locais:** 1
+
+**Total de branches remotas:** 1
 
 ## 7. Análise de Segurança
 
-### Verificação de Padrões Sensíveis\n
-- ⚠️ Padrão 'password': 45 ocorrências
-- ⚠️ Padrão 'secret': 43 ocorrências
-- ⚠️ Padrão 'api_key': 59 ocorrências
-- ⚠️ Padrão 'apikey': 62 ocorrências
-- ⚠️ Padrão 'token': 668 ocorrências
-- ⚠️ Padrão 'credentials': 144 ocorrências
+### Verificação de Padrões Sensíveis
+
+- ⚠️ Padrão 'password': 48 ocorrências
+- ⚠️ Padrão 'secret': 46 ocorrências
+- ⚠️ Padrão 'api_key': 62 ocorrências
+- ⚠️ Padrão 'apikey': 63 ocorrências
+- ⚠️ Padrão 'token': 673 ocorrências
+- ⚠️ Padrão 'credentials': 147 ocorrências
 - ⚠️ Arquivos .env no histórico: 2
 
 ## 8. Verificação de Documentação
 
-### Arquivos Essenciais\n
+### Arquivos Essenciais
+
 - ✅ README.md
 - ❌ LICENSE (ausente)
 - ❌ CONTRIBUTING.md (ausente)
 - ❌ CODE_OF_CONDUCT.md (ausente)
 - ❌ CHANGELOG.md (ausente)
 - ✅ .gitignore
-\n**Total de arquivos Markdown:** 39
+
+**Total de arquivos Markdown:** 39
 
 ## 9. Atividade Recente
 
-### Últimos 10 Commits\n
+### Últimos 10 Commits
+
 ```
+847d7a9 Document repository analysis system in README
+d38db08 Add comprehensive GitHub repository analysis system
 3d52a70 Initial plan
 961971d feat(ux): CTA Section Disruptiva + Video Play Button Fixado
 ```
-\n### Arquivos Modificados Recentemente\n
+
+### Arquivos Modificados Recentemente
+
 ```
+2 modificações: package.json
+2 modificações: README.md
+2 modificações: .gitignore
 1 modificações: workflows/n8n-workflow-650-inactive-users.json
 1 modificações: workflows/n8n-workflow-650-FIXED.json
 1 modificações: workflows/academia-webhook-responder-n8n.json
@@ -154,17 +183,15 @@ JSON: 9887 linhas
 1 modificações: waha-n8n-bridge.js
 1 modificações: vite.config.js
 1 modificações: uai/package.json
-1 modificações: tools/inspect-excel.js
-1 modificações: tools/demo-campanha-completa.js
-1 modificações: tools/convert-csv-to-excel.js
 ```
 
 ## 10. Tamanho e Performance
 
-### Informações de Tamanho\n
+### Informações de Tamanho
+
 ```
-count: 0
-size: 0 bytes
+count: 18
+size: 92.00 KiB
 in-pack: 298
 packs: 1
 size-pack: 11.08 MiB
@@ -172,32 +199,44 @@ prune-packable: 0
 garbage: 0
 size-garbage: 0 bytes
 ```
-\n**Tamanho do diretório .git:** 12M
-\n**Tamanho total do repositório:** 27M
+
+**Tamanho do diretório .git:** 12M
+
+**Tamanho total do repositório:** 27M
 
 ## 11. Issues e Pull Requests
 
-### Issues\n
+### Issues
+
 ```
 ```
-\n### Pull Requests\n
+
+### Pull Requests
+
 ```
 ```
 
 ## 12. Resumo Executivo
 
-### Indicadores-Chave\n
+### Indicadores-Chave
+
 | Métrica | Valor |
 |---------|-------|
-| Total de Commits | 2 |
-| Commits (30 dias) | 2 |
+| Total de Commits | 4 |
+| Commits (30 dias) | 4 |
 | Contribuidores | 2 |
-| Arquivos Rastreados | 249 |
+| Arquivos Rastreados | 256 |
 | Branches Locais | 1 |
 | Tamanho do Repositório | 27M |
-\n### Status da Documentação\n
+
+### Status da Documentação
+
 **Score de Documentação:** 2/6 (33%)
-\n❌ **Documentação insuficiente. Recomenda-se melhorias.**
-\n---\n
+
+❌ **Documentação insuficiente. Recomenda-se melhorias.**
+
+---
+
 *Análise gerada automaticamente por analise-repositorio.sh v1.0.0*
-\n*Data: 25/10/2025 03:20:56*
+
+*Data: 25/10/2025 03:27:03*

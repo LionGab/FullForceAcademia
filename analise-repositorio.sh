@@ -77,12 +77,14 @@ EOF
 
 # Função para adicionar seção ao relatório
 add_section() {
-    echo -e "\n## $1\n" >> "${REPORT_FILE}"
+    echo "" >> "${REPORT_FILE}"
+    echo "## $1" >> "${REPORT_FILE}"
+    echo "" >> "${REPORT_FILE}"
 }
 
 # Função para adicionar conteúdo ao relatório
 add_content() {
-    echo "$1" >> "${REPORT_FILE}"
+    echo -e "$1" >> "${REPORT_FILE}"
 }
 
 # Verificar se estamos em um repositório Git
@@ -139,7 +141,9 @@ analyze_commits() {
     add_content "- Último ano: ${COMMITS_1_YEAR}"
     
     # Distribuição por mês (últimos 12 meses)
-    add_content "\n### Distribuição Mensal (Últimos 12 meses)\n"
+    add_content ""
+    add_content "### Distribuição Mensal (Últimos 12 meses)"
+    add_content ""
     add_content '```'
     git log --since='1 year ago' --date=format:'%Y-%m' --pretty=format:'%ad' 2>/dev/null | \
         sort | uniq -c | sort -rn | head -12 | \
@@ -147,7 +151,9 @@ analyze_commits() {
     add_content '```'
     
     # Commits por dia da semana
-    add_content "\n### Commits por Dia da Semana\n"
+    add_content ""
+    add_content "### Commits por Dia da Semana"
+    add_content ""
     add_content '```'
     git log --date=format:'%A' --pretty=format:'%ad' 2>/dev/null | \
         sort | uniq -c | sort -rn | \
@@ -166,13 +172,17 @@ analyze_contributors() {
     add_content "### Total de Contribuidores: ${TOTAL_CONTRIBUTORS}"
     
     # Top 10 contribuidores
-    add_content "\n### Top 10 Contribuidores por Commits\n"
+    add_content ""
+    add_content "### Top 10 Contribuidores por Commits"
+    add_content ""
     add_content '```'
     git shortlog -sn --all --no-merges 2>/dev/null | head -10 | tee -a "${REPORT_FILE}"
     add_content '```'
     
     # Contribuidores ativos últimos 30 dias
-    add_content "\n### Contribuidores Ativos (Últimos 30 dias)\n"
+    add_content ""
+    add_content "### Contribuidores Ativos (Últimos 30 dias)"
+    add_content ""
     add_content '```'
     git shortlog -sn --since='30 days ago' --no-merges 2>/dev/null | tee -a "${REPORT_FILE}"
     add_content '```'
@@ -184,7 +194,8 @@ analyze_files() {
     add_section "4. Análise de Arquivos"
     
     # Top 20 arquivos mais modificados
-    add_content "### Top 20 Arquivos Mais Modificados\n"
+    add_content "### Top 20 Arquivos Mais Modificados"
+    add_content ""
     add_content '```'
     git log --all --name-only --format='format:' 2>/dev/null | \
         grep -v '^$' | sort | uniq -c | sort -rn | head -20 | \
@@ -192,7 +203,9 @@ analyze_files() {
     add_content '```'
     
     # Arquivos maiores
-    add_content "\n### Top 20 Arquivos Maiores\n"
+    add_content ""
+    add_content "### Top 20 Arquivos Maiores"
+    add_content ""
     add_content '```'
     git ls-files 2>/dev/null | xargs -I{} du -h {} 2>/dev/null | \
         sort -rh | head -20 | tee -a "${REPORT_FILE}"
@@ -201,7 +214,8 @@ analyze_files() {
     # Total de arquivos rastreados
     TOTAL_FILES=$(git ls-files 2>/dev/null | wc -l)
     log "Total de arquivos rastreados: ${TOTAL_FILES}"
-    add_content "\n**Total de arquivos rastreados:** ${TOTAL_FILES}"
+    add_content ""
+    add_content "**Total de arquivos rastreados:** ${TOTAL_FILES}"
 }
 
 # 5. Estatísticas de Código
@@ -210,7 +224,8 @@ analyze_code_stats() {
     add_section "5. Estatísticas de Código"
     
     # Contar linhas de código por tipo de arquivo
-    add_content "### Linhas de Código por Tipo de Arquivo\n"
+    add_content "### Linhas de Código por Tipo de Arquivo"
+    add_content ""
     add_content '```'
     
     # JavaScript/TypeScript
@@ -248,13 +263,16 @@ analyze_branches() {
     add_section "6. Análise de Branches"
     
     # Branches locais
-    add_content "### Branches Locais\n"
+    add_content "### Branches Locais"
+    add_content ""
     add_content '```'
     git branch -v 2>/dev/null | tee -a "${REPORT_FILE}"
     add_content '```'
     
     # Branches remotas
-    add_content "\n### Branches Remotas\n"
+    add_content ""
+    add_content "### Branches Remotas"
+    add_content ""
     add_content '```'
     git branch -r 2>/dev/null | head -20 | tee -a "${REPORT_FILE}"
     add_content '```'
@@ -264,8 +282,10 @@ analyze_branches() {
     REMOTE_BRANCHES=$(git branch -r 2>/dev/null | wc -l)
     log "Branches locais: ${LOCAL_BRANCHES}"
     log "Branches remotas: ${REMOTE_BRANCHES}"
-    add_content "\n**Total de branches locais:** ${LOCAL_BRANCHES}"
-    add_content "\n**Total de branches remotas:** ${REMOTE_BRANCHES}"
+    add_content ""
+    add_content "**Total de branches locais:** ${LOCAL_BRANCHES}"
+    add_content ""
+    add_content "**Total de branches remotas:** ${REMOTE_BRANCHES}"
 }
 
 # 7. Análise de Segurança Básica
@@ -273,7 +293,8 @@ analyze_security() {
     print_header "7. Análise de Segurança Básica"
     add_section "7. Análise de Segurança"
     
-    add_content "### Verificação de Padrões Sensíveis\n"
+    add_content "### Verificação de Padrões Sensíveis"
+    add_content ""
     
     # Procurar por padrões suspeitos no histórico
     log "Verificando padrões sensíveis no código..."
@@ -302,7 +323,8 @@ analyze_documentation() {
     print_header "8. Verificação de Documentação"
     add_section "8. Verificação de Documentação"
     
-    add_content "### Arquivos Essenciais\n"
+    add_content "### Arquivos Essenciais"
+    add_content ""
     
     ESSENTIAL_FILES=("README.md" "LICENSE" "CONTRIBUTING.md" "CODE_OF_CONDUCT.md" "CHANGELOG.md" ".gitignore")
     
@@ -319,7 +341,8 @@ analyze_documentation() {
     # Contar arquivos de documentação
     TOTAL_DOCS=$(find . -name "*.md" -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null | wc -l)
     log "Total de arquivos Markdown: ${TOTAL_DOCS}"
-    add_content "\n**Total de arquivos Markdown:** ${TOTAL_DOCS}"
+    add_content ""
+    add_content "**Total de arquivos Markdown:** ${TOTAL_DOCS}"
 }
 
 # 9. Atividade Recente
@@ -327,13 +350,16 @@ analyze_recent_activity() {
     print_header "9. Atividade Recente (Últimos 30 dias)"
     add_section "9. Atividade Recente"
     
-    add_content "### Últimos 10 Commits\n"
+    add_content "### Últimos 10 Commits"
+    add_content ""
     add_content '```'
     git log --oneline -10 2>/dev/null | tee -a "${REPORT_FILE}"
     add_content '```'
     
     # Arquivos modificados recentemente
-    add_content "\n### Arquivos Modificados Recentemente\n"
+    add_content ""
+    add_content "### Arquivos Modificados Recentemente"
+    add_content ""
     add_content '```'
     git log --since='30 days ago' --name-only --format='format:' 2>/dev/null | \
         grep -v '^$' | sort | uniq -c | sort -rn | head -10 | \
@@ -346,7 +372,8 @@ analyze_size_performance() {
     print_header "10. Tamanho e Performance do Repositório"
     add_section "10. Tamanho e Performance"
     
-    add_content "### Informações de Tamanho\n"
+    add_content "### Informações de Tamanho"
+    add_content ""
     add_content '```'
     git count-objects -vH 2>/dev/null | tee -a "${REPORT_FILE}"
     add_content '```'
@@ -354,12 +381,14 @@ analyze_size_performance() {
     # Tamanho do diretório .git
     GIT_SIZE=$(du -sh .git 2>/dev/null | awk '{print $1}')
     log "Tamanho do .git: ${GIT_SIZE}"
-    add_content "\n**Tamanho do diretório .git:** ${GIT_SIZE}"
+    add_content ""
+    add_content "**Tamanho do diretório .git:** ${GIT_SIZE}"
     
     # Tamanho total do repositório
     REPO_SIZE=$(du -sh . 2>/dev/null | awk '{print $1}')
     log "Tamanho total: ${REPO_SIZE}"
-    add_content "\n**Tamanho total do repositório:** ${REPO_SIZE}"
+    add_content ""
+    add_content "**Tamanho total do repositório:** ${REPO_SIZE}"
 }
 
 # 11. Análise de Issues e PRs (via GitHub CLI se disponível)
@@ -371,14 +400,17 @@ analyze_github_data() {
         log "GitHub CLI detectado, coletando dados..."
         
         # Issues
-        add_content "### Issues\n"
+        add_content "### Issues"
+        add_content ""
         add_content '```'
         gh issue list --limit 10 2>/dev/null | tee -a "${REPORT_FILE}" || \
             echo "Não foi possível obter issues" | tee -a "${REPORT_FILE}"
         add_content '```'
         
         # Pull Requests
-        add_content "\n### Pull Requests\n"
+        add_content ""
+        add_content "### Pull Requests"
+        add_content ""
         add_content '```'
         gh pr list --limit 10 2>/dev/null | tee -a "${REPORT_FILE}" || \
             echo "Não foi possível obter PRs" | tee -a "${REPORT_FILE}"
@@ -394,7 +426,8 @@ generate_summary() {
     print_header "12. Gerando Resumo Executivo"
     add_section "12. Resumo Executivo"
     
-    add_content "### Indicadores-Chave\n"
+    add_content "### Indicadores-Chave"
+    add_content ""
     add_content "| Métrica | Valor |"
     add_content "|---------|-------|"
     add_content "| Total de Commits | ${TOTAL_COMMITS} |"
@@ -404,7 +437,9 @@ generate_summary() {
     add_content "| Branches Locais | ${LOCAL_BRANCHES} |"
     add_content "| Tamanho do Repositório | ${REPO_SIZE} |"
     
-    add_content "\n### Status da Documentação\n"
+    add_content ""
+    add_content "### Status da Documentação"
+    add_content ""
     
     DOCS_SCORE=0
     for file in "${ESSENTIAL_FILES[@]}"; do
@@ -415,11 +450,14 @@ generate_summary() {
     add_content "**Score de Documentação:** ${DOCS_SCORE}/${#ESSENTIAL_FILES[@]} (${DOCS_PERCENTAGE}%)"
     
     if [ ${DOCS_PERCENTAGE} -ge 80 ]; then
-        add_content "\n✅ **Excelente documentação!**"
+        add_content ""
+        add_content "✅ **Excelente documentação!**"
     elif [ ${DOCS_PERCENTAGE} -ge 50 ]; then
-        add_content "\n⚠️ **Documentação adequada, mas pode melhorar.**"
+        add_content ""
+        add_content "⚠️ **Documentação adequada, mas pode melhorar.**"
     else
-        add_content "\n❌ **Documentação insuficiente. Recomenda-se melhorias.**"
+        add_content ""
+        add_content "❌ **Documentação insuficiente. Recomenda-se melhorias.**"
     fi
 }
 
@@ -460,9 +498,12 @@ EOF
     generate_summary
     
     # Finalizar relatório
-    add_content "\n---\n"
+    add_content ""
+    add_content "---"
+    add_content ""
     add_content "*Análise gerada automaticamente por analise-repositorio.sh v1.0.0*"
-    add_content "\n*Data: $(date +"%d/%m/%Y %H:%M:%S")*"
+    add_content ""
+    add_content "*Data: $(date +"%d/%m/%Y %H:%M:%S")*"
     
     # Fechar JSON
     cat >> "${JSON_FILE}" << EOF
