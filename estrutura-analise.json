@@ -1,0 +1,911 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Estrutura de Análise de Repositório GitHub",
+  "description": "Estrutura JSON de referência para dados de análise criteriosa de repositórios GitHub",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "description": "Metadados da análise",
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Data e hora da análise em formato ISO 8601"
+        },
+        "versao_script": {
+          "type": "string",
+          "description": "Versão do script de análise utilizado"
+        },
+        "repositorio": {
+          "type": "string",
+          "description": "Nome do repositório analisado"
+        },
+        "branch": {
+          "type": "string",
+          "description": "Branch principal ou atual analisado"
+        },
+        "url_remoto": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL do repositório remoto"
+        },
+        "caminho_local": {
+          "type": "string",
+          "description": "Caminho local absoluto do repositório"
+        }
+      },
+      "required": ["timestamp", "versao_script", "repositorio"]
+    },
+    "dados": {
+      "description": "Dados completos da análise",
+      "type": "object",
+      "properties": {
+        "estatisticas_commits": {
+          "description": "Estatísticas de commits do repositório",
+          "type": "object",
+          "properties": {
+            "total_commits": {
+              "type": "integer",
+              "description": "Total de commits em todas as branches"
+            },
+            "commits_30_dias": {
+              "type": "integer",
+              "description": "Commits nos últimos 30 dias"
+            },
+            "commits_90_dias": {
+              "type": "integer",
+              "description": "Commits nos últimos 90 dias"
+            },
+            "commits_1_ano": {
+              "type": "integer",
+              "description": "Commits no último ano"
+            },
+            "media_commits_dia": {
+              "type": "number",
+              "description": "Média de commits por dia"
+            },
+            "media_commits_semana": {
+              "type": "number",
+              "description": "Média de commits por semana"
+            },
+            "distribuicao_mensal": {
+              "type": "array",
+              "description": "Distribuição de commits por mês",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "mes": {
+                    "type": "string",
+                    "pattern": "^[0-9]{4}-[0-9]{2}$",
+                    "description": "Mês no formato YYYY-MM"
+                  },
+                  "commits": {
+                    "type": "integer",
+                    "description": "Número de commits no mês"
+                  }
+                }
+              }
+            },
+            "distribuicao_dia_semana": {
+              "type": "array",
+              "description": "Distribuição de commits por dia da semana",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "dia": {
+                    "type": "string",
+                    "enum": ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"],
+                    "description": "Dia da semana"
+                  },
+                  "commits": {
+                    "type": "integer",
+                    "description": "Número de commits no dia"
+                  }
+                }
+              }
+            },
+            "distribuicao_hora": {
+              "type": "array",
+              "description": "Distribuição de commits por hora do dia",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "hora": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 23,
+                    "description": "Hora do dia (0-23)"
+                  },
+                  "commits": {
+                    "type": "integer",
+                    "description": "Número de commits na hora"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "contribuidores": {
+          "description": "Análise de contribuidores",
+          "type": "object",
+          "properties": {
+            "total_contribuidores": {
+              "type": "integer",
+              "description": "Total de contribuidores únicos"
+            },
+            "contribuidores_ativos_30_dias": {
+              "type": "integer",
+              "description": "Contribuidores ativos nos últimos 30 dias"
+            },
+            "top_contribuidores": {
+              "type": "array",
+              "description": "Top contribuidores por número de commits",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "description": "Nome do contribuidor"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Email do contribuidor"
+                  },
+                  "commits": {
+                    "type": "integer",
+                    "description": "Número de commits"
+                  },
+                  "linhas_adicionadas": {
+                    "type": "integer",
+                    "description": "Total de linhas adicionadas"
+                  },
+                  "linhas_removidas": {
+                    "type": "integer",
+                    "description": "Total de linhas removidas"
+                  },
+                  "primeiro_commit": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Data do primeiro commit"
+                  },
+                  "ultimo_commit": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Data do último commit"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "arquivos": {
+          "description": "Análise de arquivos do repositório",
+          "type": "object",
+          "properties": {
+            "total_arquivos": {
+              "type": "integer",
+              "description": "Total de arquivos rastreados"
+            },
+            "arquivos_mais_modificados": {
+              "type": "array",
+              "description": "Arquivos com maior número de modificações",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "caminho": {
+                    "type": "string",
+                    "description": "Caminho do arquivo"
+                  },
+                  "modificacoes": {
+                    "type": "integer",
+                    "description": "Número de vezes que foi modificado"
+                  },
+                  "tamanho": {
+                    "type": "string",
+                    "description": "Tamanho do arquivo (formato legível)"
+                  }
+                }
+              }
+            },
+            "arquivos_maiores": {
+              "type": "array",
+              "description": "Maiores arquivos do repositório",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "caminho": {
+                    "type": "string",
+                    "description": "Caminho do arquivo"
+                  },
+                  "tamanho": {
+                    "type": "string",
+                    "description": "Tamanho do arquivo"
+                  },
+                  "tamanho_bytes": {
+                    "type": "integer",
+                    "description": "Tamanho em bytes"
+                  }
+                }
+              }
+            },
+            "distribuicao_tipos": {
+              "type": "object",
+              "description": "Distribuição de arquivos por tipo",
+              "additionalProperties": {
+                "type": "integer"
+              }
+            }
+          }
+        },
+        "codigo": {
+          "description": "Estatísticas de código",
+          "type": "object",
+          "properties": {
+            "linhas_por_linguagem": {
+              "type": "object",
+              "description": "Linhas de código por linguagem",
+              "properties": {
+                "javascript": {
+                  "type": "integer",
+                  "description": "Linhas de JavaScript/TypeScript"
+                },
+                "python": {
+                  "type": "integer",
+                  "description": "Linhas de Python"
+                },
+                "java": {
+                  "type": "integer",
+                  "description": "Linhas de Java"
+                },
+                "html_css": {
+                  "type": "integer",
+                  "description": "Linhas de HTML/CSS"
+                },
+                "markdown": {
+                  "type": "integer",
+                  "description": "Linhas de Markdown"
+                },
+                "json": {
+                  "type": "integer",
+                  "description": "Linhas de JSON"
+                }
+              }
+            },
+            "total_linhas": {
+              "type": "integer",
+              "description": "Total de linhas de código"
+            },
+            "complexidade": {
+              "type": "object",
+              "description": "Métricas de complexidade",
+              "properties": {
+                "ciclomatica_media": {
+                  "type": "number",
+                  "description": "Complexidade ciclomática média"
+                },
+                "indice_manutenibilidade": {
+                  "type": "number",
+                  "description": "Índice de manutenibilidade (0-100)"
+                },
+                "funcoes_complexas": {
+                  "type": "integer",
+                  "description": "Número de funções com alta complexidade"
+                }
+              }
+            }
+          }
+        },
+        "branches": {
+          "description": "Análise de branches",
+          "type": "object",
+          "properties": {
+            "total_branches_locais": {
+              "type": "integer",
+              "description": "Total de branches locais"
+            },
+            "total_branches_remotos": {
+              "type": "integer",
+              "description": "Total de branches remotos"
+            },
+            "branch_principal": {
+              "type": "string",
+              "description": "Nome da branch principal (main/master)"
+            },
+            "branches_ativas": {
+              "type": "array",
+              "description": "Branches com commits recentes",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "nome": {
+                    "type": "string",
+                    "description": "Nome da branch"
+                  },
+                  "ultimo_commit": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Data do último commit"
+                  },
+                  "commits_ahead": {
+                    "type": "integer",
+                    "description": "Commits à frente da principal"
+                  }
+                }
+              }
+            },
+            "branches_stale": {
+              "type": "array",
+              "description": "Branches antigas sem atividade",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "nome": {
+                    "type": "string"
+                  },
+                  "dias_inatividade": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "seguranca": {
+          "description": "Análise de segurança",
+          "type": "object",
+          "properties": {
+            "padroes_sensiveis": {
+              "type": "object",
+              "description": "Detecção de padrões sensíveis no código",
+              "properties": {
+                "password": {
+                  "type": "integer",
+                  "description": "Ocorrências de 'password'"
+                },
+                "secret": {
+                  "type": "integer",
+                  "description": "Ocorrências de 'secret'"
+                },
+                "api_key": {
+                  "type": "integer",
+                  "description": "Ocorrências de 'api_key'"
+                },
+                "token": {
+                  "type": "integer",
+                  "description": "Ocorrências de 'token'"
+                },
+                "credentials": {
+                  "type": "integer",
+                  "description": "Ocorrências de 'credentials'"
+                }
+              }
+            },
+            "arquivos_env_historico": {
+              "type": "integer",
+              "description": "Arquivos .env encontrados no histórico"
+            },
+            "segredos_expostos": {
+              "type": "array",
+              "description": "Segredos detectados por scanners",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tipo": {
+                    "type": "string",
+                    "description": "Tipo de segredo (AWS key, GitHub token, etc)"
+                  },
+                  "arquivo": {
+                    "type": "string",
+                    "description": "Arquivo onde foi encontrado"
+                  },
+                  "linha": {
+                    "type": "integer",
+                    "description": "Linha no arquivo"
+                  },
+                  "commit": {
+                    "type": "string",
+                    "description": "SHA do commit"
+                  }
+                }
+              }
+            },
+            "vulnerabilidades_dependencias": {
+              "type": "array",
+              "description": "Vulnerabilidades em dependências",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "pacote": {
+                    "type": "string",
+                    "description": "Nome do pacote vulnerável"
+                  },
+                  "versao_atual": {
+                    "type": "string",
+                    "description": "Versão instalada"
+                  },
+                  "versao_corrigida": {
+                    "type": "string",
+                    "description": "Versão que corrige a vulnerabilidade"
+                  },
+                  "severidade": {
+                    "type": "string",
+                    "enum": ["critical", "high", "medium", "low"],
+                    "description": "Severidade da vulnerabilidade"
+                  },
+                  "cve": {
+                    "type": "string",
+                    "description": "CVE identifier"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "documentacao": {
+          "description": "Análise de documentação",
+          "type": "object",
+          "properties": {
+            "arquivos_essenciais": {
+              "type": "object",
+              "description": "Presença de arquivos essenciais",
+              "properties": {
+                "readme": {
+                  "type": "boolean",
+                  "description": "README.md presente"
+                },
+                "license": {
+                  "type": "boolean",
+                  "description": "LICENSE presente"
+                },
+                "contributing": {
+                  "type": "boolean",
+                  "description": "CONTRIBUTING.md presente"
+                },
+                "code_of_conduct": {
+                  "type": "boolean",
+                  "description": "CODE_OF_CONDUCT.md presente"
+                },
+                "changelog": {
+                  "type": "boolean",
+                  "description": "CHANGELOG.md presente"
+                },
+                "security": {
+                  "type": "boolean",
+                  "description": "SECURITY.md presente"
+                },
+                "gitignore": {
+                  "type": "boolean",
+                  "description": ".gitignore presente"
+                }
+              }
+            },
+            "total_arquivos_markdown": {
+              "type": "integer",
+              "description": "Total de arquivos Markdown"
+            },
+            "score_documentacao": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Score de qualidade da documentação (0-100)"
+            }
+          }
+        },
+        "atividade_recente": {
+          "description": "Atividade recente no repositório",
+          "type": "object",
+          "properties": {
+            "ultimos_commits": {
+              "type": "array",
+              "description": "Últimos 10 commits",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sha": {
+                    "type": "string",
+                    "description": "SHA do commit"
+                  },
+                  "mensagem": {
+                    "type": "string",
+                    "description": "Mensagem do commit"
+                  },
+                  "autor": {
+                    "type": "string",
+                    "description": "Autor do commit"
+                  },
+                  "data": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Data do commit"
+                  }
+                }
+              }
+            },
+            "arquivos_modificados_recentemente": {
+              "type": "array",
+              "description": "Arquivos com modificações nos últimos 30 dias",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "arquivo": {
+                    "type": "string"
+                  },
+                  "modificacoes": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tamanho_performance": {
+          "description": "Tamanho e performance do repositório",
+          "type": "object",
+          "properties": {
+            "tamanho_total": {
+              "type": "string",
+              "description": "Tamanho total do repositório (formato legível)"
+            },
+            "tamanho_total_bytes": {
+              "type": "integer",
+              "description": "Tamanho total em bytes"
+            },
+            "tamanho_git": {
+              "type": "string",
+              "description": "Tamanho do diretório .git"
+            },
+            "tamanho_git_bytes": {
+              "type": "integer",
+              "description": "Tamanho do .git em bytes"
+            },
+            "numero_objetos": {
+              "type": "integer",
+              "description": "Número de objetos no repositório"
+            },
+            "objetos_pack": {
+              "type": "integer",
+              "description": "Objetos em packfiles"
+            },
+            "tamanho_pack": {
+              "type": "string",
+              "description": "Tamanho dos packfiles"
+            },
+            "objetos_grandes": {
+              "type": "array",
+              "description": "Maiores objetos no repositório",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "sha": {
+                    "type": "string",
+                    "description": "SHA do objeto"
+                  },
+                  "tamanho": {
+                    "type": "string",
+                    "description": "Tamanho do objeto"
+                  },
+                  "tipo": {
+                    "type": "string",
+                    "description": "Tipo do objeto (blob, tree, commit)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "issues_prs": {
+          "description": "Análise de Issues e Pull Requests (via GitHub API)",
+          "type": "object",
+          "properties": {
+            "issues": {
+              "type": "object",
+              "properties": {
+                "total_abertas": {
+                  "type": "integer",
+                  "description": "Total de issues abertas"
+                },
+                "total_fechadas": {
+                  "type": "integer",
+                  "description": "Total de issues fechadas"
+                },
+                "tempo_medio_resolucao_dias": {
+                  "type": "number",
+                  "description": "Tempo médio de resolução em dias"
+                },
+                "issues_abertas_recentes": {
+                  "type": "array",
+                  "description": "Issues abertas mais recentes",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "numero": {
+                        "type": "integer"
+                      },
+                      "titulo": {
+                        "type": "string"
+                      },
+                      "labels": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "criada_em": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "pull_requests": {
+              "type": "object",
+              "properties": {
+                "total_abertos": {
+                  "type": "integer",
+                  "description": "Total de PRs abertos"
+                },
+                "total_merged": {
+                  "type": "integer",
+                  "description": "Total de PRs merged"
+                },
+                "total_fechados": {
+                  "type": "integer",
+                  "description": "Total de PRs fechados sem merge"
+                },
+                "merge_rate": {
+                  "type": "number",
+                  "description": "Taxa de merge (%) - PRs merged / total PRs"
+                },
+                "tempo_medio_merge_dias": {
+                  "type": "number",
+                  "description": "Tempo médio até merge em dias"
+                },
+                "prs_abertos_recentes": {
+                  "type": "array",
+                  "description": "PRs abertos mais recentes",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "numero": {
+                        "type": "integer"
+                      },
+                      "titulo": {
+                        "type": "string"
+                      },
+                      "autor": {
+                        "type": "string"
+                      },
+                      "criado_em": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "metricas_dora": {
+          "description": "Métricas DORA (DevOps Research and Assessment)",
+          "type": "object",
+          "properties": {
+            "deploy_frequency": {
+              "type": "object",
+              "description": "Frequência de deploy",
+              "properties": {
+                "deploys_por_semana": {
+                  "type": "number",
+                  "description": "Média de deploys por semana"
+                },
+                "total_deploys": {
+                  "type": "integer",
+                  "description": "Total de deploys no período"
+                },
+                "classificacao": {
+                  "type": "string",
+                  "enum": ["Elite", "High", "Medium", "Low"],
+                  "description": "Classificação DORA"
+                }
+              }
+            },
+            "lead_time_for_changes": {
+              "type": "object",
+              "description": "Tempo de lead para mudanças",
+              "properties": {
+                "tempo_medio_dias": {
+                  "type": "number",
+                  "description": "Tempo médio de commit até deploy (dias)"
+                },
+                "classificacao": {
+                  "type": "string",
+                  "enum": ["Elite", "High", "Medium", "Low"]
+                }
+              }
+            },
+            "time_to_restore": {
+              "type": "object",
+              "description": "Tempo para restauração de serviço",
+              "properties": {
+                "tempo_medio_horas": {
+                  "type": "number",
+                  "description": "Tempo médio de restauração (horas)"
+                },
+                "classificacao": {
+                  "type": "string",
+                  "enum": ["Elite", "High", "Medium", "Low"]
+                }
+              }
+            },
+            "change_failure_rate": {
+              "type": "object",
+              "description": "Taxa de falha de mudanças",
+              "properties": {
+                "taxa_porcentagem": {
+                  "type": "number",
+                  "description": "Porcentagem de deploys que falharam"
+                },
+                "total_falhas": {
+                  "type": "integer",
+                  "description": "Total de falhas no período"
+                },
+                "classificacao": {
+                  "type": "string",
+                  "enum": ["Elite", "High", "Medium", "Low"]
+                }
+              }
+            }
+          }
+        },
+        "resumo_executivo": {
+          "description": "Resumo executivo da análise",
+          "type": "object",
+          "properties": {
+            "saude_geral": {
+              "type": "string",
+              "enum": ["Excelente", "Bom", "Regular", "Ruim"],
+              "description": "Avaliação geral da saúde do repositório"
+            },
+            "score_geral": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Score geral de 0 a 100"
+            },
+            "pontos_fortes": {
+              "type": "array",
+              "description": "Pontos fortes identificados",
+              "items": {
+                "type": "string"
+              }
+            },
+            "areas_melhoria": {
+              "type": "array",
+              "description": "Áreas que precisam de melhoria",
+              "items": {
+                "type": "string"
+              }
+            },
+            "acoes_recomendadas": {
+              "type": "array",
+              "description": "Ações recomendadas prioritárias",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "acao": {
+                    "type": "string",
+                    "description": "Descrição da ação"
+                  },
+                  "prioridade": {
+                    "type": "string",
+                    "enum": ["Alta", "Média", "Baixa"],
+                    "description": "Prioridade da ação"
+                  },
+                  "impacto": {
+                    "type": "string",
+                    "description": "Impacto esperado"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["metadata", "dados"],
+  "examples": [
+    {
+      "metadata": {
+        "timestamp": "2025-10-25T03:00:00Z",
+        "versao_script": "1.0.0",
+        "repositorio": "FullForceAcademia",
+        "branch": "main",
+        "url_remoto": "https://github.com/LionGab/FullForceAcademia",
+        "caminho_local": "/home/runner/work/FullForceAcademia/FullForceAcademia"
+      },
+      "dados": {
+        "estatisticas_commits": {
+          "total_commits": 1250,
+          "commits_30_dias": 45,
+          "commits_90_dias": 180,
+          "commits_1_ano": 850,
+          "media_commits_dia": 3.4,
+          "media_commits_semana": 23.8,
+          "distribuicao_mensal": [
+            {
+              "mes": "2024-10",
+              "commits": 45
+            },
+            {
+              "mes": "2024-09",
+              "commits": 52
+            }
+          ]
+        },
+        "contribuidores": {
+          "total_contribuidores": 8,
+          "contribuidores_ativos_30_dias": 3,
+          "top_contribuidores": [
+            {
+              "nome": "João Silva",
+              "email": "joao@example.com",
+              "commits": 450,
+              "linhas_adicionadas": 25000,
+              "linhas_removidas": 8000
+            }
+          ]
+        },
+        "documentacao": {
+          "arquivos_essenciais": {
+            "readme": true,
+            "license": true,
+            "contributing": false,
+            "code_of_conduct": false,
+            "changelog": false,
+            "security": false,
+            "gitignore": true
+          },
+          "total_arquivos_markdown": 45,
+          "score_documentacao": 65
+        },
+        "resumo_executivo": {
+          "saude_geral": "Bom",
+          "score_geral": 78,
+          "pontos_fortes": [
+            "Alta frequência de commits",
+            "Boa cobertura de testes",
+            "Documentação básica presente"
+          ],
+          "areas_melhoria": [
+            "Documentação de contribuição ausente",
+            "Algumas dependências desatualizadas",
+            "Branches antigas não removidas"
+          ],
+          "acoes_recomendadas": [
+            {
+              "acao": "Criar CONTRIBUTING.md",
+              "prioridade": "Alta",
+              "impacto": "Facilita onboarding de novos contribuidores"
+            },
+            {
+              "acao": "Atualizar dependências vulneráveis",
+              "prioridade": "Alta",
+              "impacto": "Melhora segurança"
+            },
+            {
+              "acao": "Limpar branches stale",
+              "prioridade": "Média",
+              "impacto": "Organização do repositório"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

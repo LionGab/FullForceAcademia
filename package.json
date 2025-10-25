@@ -30,6 +30,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "docs": "jsdoc -c jsdoc.conf.json",
+    "analyze": "bash analise-repositorio.sh",
+    "analyze:repo": "bash analise-repositorio.sh",
     "install-deps": "npm install",
     "setup": "npm run install-deps && echo '✅ FFGym System instalado. Execute: npm run quick-start'"
   },

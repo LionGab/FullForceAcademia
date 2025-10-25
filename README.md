@@ -234,6 +234,55 @@ crontab -e
 2. Verifique logs de erro
 3. Confirme horário de funcionamento
 
+## 🔍 Análise de Repositório
+
+### Sistema de Análise Criteriosa
+
+Este repositório inclui um sistema completo de análise para avaliação profunda de repositórios GitHub.
+
+#### Executar Análise
+
+```bash
+# Via npm script
+npm run analyze
+
+# Ou diretamente via bash
+./analise-repositorio.sh
+```
+
+#### O que é analisado?
+
+1. **Estatísticas de Commits** - Total, distribuição temporal, frequência
+2. **Contribuidores** - Top contribuidores, linhas modificadas, atividade
+3. **Arquivos** - Mais modificados, maiores, distribuição por tipo
+4. **Código** - Linhas por linguagem, estatísticas detalhadas
+5. **Branches** - Locais, remotas, atividade
+6. **Segurança** - Padrões sensíveis, verificações básicas
+7. **Documentação** - Arquivos essenciais, completude
+8. **Atividade Recente** - Últimos commits e modificações
+9. **Performance** - Tamanho, otimizações sugeridas
+10. **Issues/PRs** - Via GitHub CLI (se disponível)
+
+#### Relatórios Gerados
+
+- **Markdown Report**: `reports/analise-repositorio/analise_completa_TIMESTAMP.md`
+- **JSON Data**: `reports/analise-repositorio/analise_dados_TIMESTAMP.json`
+
+#### Documentação Completa
+
+Para comandos avançados e ferramentas especializadas, consulte:
+- **[GUIA-ANALISE-REPOSITORIO.md](GUIA-ANALISE-REPOSITORIO.md)** - Guia completo com todos os comandos
+- **[estrutura-analise.json](estrutura-analise.json)** - Schema JSON de referência
+
+#### Automação
+
+```bash
+# Configurar análise automática via cron (exemplo: diária às 2h)
+0 2 * * * cd /caminho/do/repositorio && ./analise-repositorio.sh
+```
+
+---
+
 ## 📞 Suporte
 
 Para suporte técnico:
